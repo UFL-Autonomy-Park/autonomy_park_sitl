@@ -1,40 +1,87 @@
-# Run this script from the project root, not within scripts/.
+#!/usr/bin/env bash
+# Copies the custom Gazebo models, airframe params, and world/textures from
+# px4-additions/ into the PX4-Autopilot submodule.
+#
+# Safe to run from any directory.
+set -euo pipefail
 
-
-# Define source and destination paths
-SRC_DIR="$PROJECT_ROOT/px4-additions"
-PX4_DIR="$PROJECT_ROOT/PX4-Autopilot"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "$SCRIPT_DIR/set_env.sh"
 
 # Validate paths
-if [[ ! -d "$SRC_DIR" ]]; then
-    echo "Error: Source directory '$SRC_DIR' not found." >&2
+if [[ ! -d "$PX4_ADDITIONS_DIR" ]]; then
+    echo "Error: source directory '$PX4_ADDITIONS_DIR' not found." >&2
     exit 1
 fi
 
 if [[ ! -d "$PX4_DIR" ]]; then
-    echo "Error: PX4-Autopilot directory '$PX4_DIR' not found." >&2
+    echo "Error: PX4-Autopilot directory '$PX4_DIR' not found. Run scripts/init.sh first." >&2
     exit 1
 fi
 
 echo "Project Root: $PROJECT_ROOT"
-echo "Copying additions from $SRC_DIR to $PX4_DIR..."
+echo "Copying additions from $PX4_ADDITIONS_DIR to $PX4_DIR..."
 
-# 1. Copy Gazebo Simulation Models
-# Dest: PX4-Autopilot/Tools/simulation/gz/models/
-GZ_MODELS_DIR="$PX4_DIR/Tools/simulation/gz/models"
-mkdir -p "$GZ_MODELS_DIR"
-cp -r "$SRC_DIR/models/"* "$GZ_MODELS_DIR/"
+# copy_contents SRC_DIR DEST_DIR - copies SRC_DIR's contents into DEST_DIR,
+# failing loudly if SRC_DIR is empty or DEST_DIR doesn't exist.
+copy_contents() {
+    local src="$1" dest="$2"
+    local entries=("$src"/*)
 
-# 2. Copy Airframe Parameter files
-# Dest: PX4-Autopilot/ROMFS/px4fmu_common/init.d-posix/airframes/
+    if [[ ! -d "$dest" ]]; then
+        echo "Error: destination directory '$dest' not found (unexpected PX4-Autopilot layout?)." >&2
+        exit 1
+    fi
+
+    if [[ ! -e "${entries[0]}" ]]; then
+        echo "Error: '$src' is empty, nothing to copy." >&2
+        exit 1
+    fi
+
+    cp -r "${entries[@]}" "$dest/"
+}
+
+# 1. Gazebo simulation models -> PX4-Autopilot/Tools/simulation/gz/models/
+copy_contents "$PX4_ADDITIONS_DIR/models" "$PX4_DIR/Tools/simulation/gz/models"
+
+# 2. Airframe parameter files -> PX4-Autopilot/ROMFS/px4fmu_common/init.d-posix/airframes/
 AIRFRAMES_DIR="$PX4_DIR/ROMFS/px4fmu_common/init.d-posix/airframes"
-mkdir -p "$AIRFRAMES_DIR"
-cp -r "$SRC_DIR/params/"* "$AIRFRAMES_DIR/"
+copy_contents "$PX4_ADDITIONS_DIR/params" "$AIRFRAMES_DIR"
 
-# 3. Copy Gazebo Simulation Worlds & Textures
-# Dest: PX4-Autopilot/Tools/simulation/gz/worlds/
-GZ_WORLDS_DIR="$PX4_DIR/Tools/simulation/gz/worlds"
-mkdir -p "$GZ_WORLDS_DIR"
-cp -r "$SRC_DIR/worlds/"* "$GZ_WORLDS_DIR/"
+# PX4 does NOT glob this directory for its build: airframes/CMakeLists.txt
+# lists every staged file explicitly via px4_add_romfs_files(...). A file
+# that merely exists in the directory but isn't in that list is silently
+# skipped when the ROMFS is packed into the build rootfs - no cmake
+# reconfigure or clean rebuild will pick it up. Register any new custom
+# airframe files here so `make px4_sitl gz_<model>` can find them.
+register_airframe() {
+    local airframe="$1"
+    local cmake_file="$AIRFRAMES_DIR/CMakeLists.txt"
+
+    if grep -qE "^[[:space:]]*${airframe}[[:space:]]*\$" "$cmake_file"; then
+        return
+    fi
+
+    echo "Registering '$airframe' in $cmake_file (px4_add_romfs_files)"
+    # Insert as a new entry right before the closing ')' of
+    # px4_add_romfs_files(...), which is the file's last line.
+    sed -i "\$i\\	${airframe}" "$cmake_file"
+}
+
+for airframe_path in "$PX4_ADDITIONS_DIR/params/"*; do
+    register_airframe "$(basename "$airframe_path")"
+done
+
+# 3. Gazebo simulation worlds & textures -> PX4-Autopilot/Tools/simulation/gz/worlds/
+copy_contents "$PX4_ADDITIONS_DIR/worlds" "$PX4_DIR/Tools/simulation/gz/worlds"
 
 echo "Successfully synchronized custom assets into PX4-Autopilot."
+
+if [[ -d "$PX4_DIR/build" ]]; then
+    echo
+    echo "NOTE: an existing build/ dir was found. PX4's CMake globs the"
+    echo "worlds directory and the gz_bridge build-target list at configure"
+    echo "time, so a new world, or a newly-registered airframe, won't take"
+    echo "effect until you reconfigure: rm -rf '$PX4_DIR/build/px4_sitl_default'"
+    echo "and rebuild, or re-run 'cmake' in that build directory."
+fi
