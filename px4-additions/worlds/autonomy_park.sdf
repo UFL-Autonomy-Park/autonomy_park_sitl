@@ -1,0 +1,767 @@
+<?xml version="1.0" ?>
+<sdf version="1.9">
+  <world name="autonomy_park">
+    <physics type="ode">
+      <max_step_size>0.004</max_step_size>
+      <real_time_factor>1.0</real_time_factor>
+      <real_time_update_rate>250</real_time_update_rate>
+    </physics>
+
+    <!-- World Plugins -->
+    <plugin name="gz::sim::systems::Physics" filename="gz-sim-physics-system"/>
+    <plugin name="gz::sim::systems::UserCommands" filename="gz-sim-user-commands-system"/>
+    <plugin name="gz::sim::systems::SceneBroadcaster" filename="gz-sim-scene-broadcaster-system"/>
+    <plugin name="gz::sim::systems::Contact" filename="gz-sim-contact-system"/>
+    <plugin name="gz::sim::systems::Imu" filename="gz-sim-imu-system"/>
+    <plugin name="gz::sim::systems::AirPressure" filename="gz-sim-air-pressure-system"/>
+    <plugin name="gz::sim::systems::Magnetometer" filename="gz-sim-magnetometer-system"/>
+    <plugin name="gz::sim::systems::NavSat" filename="gz-sim-navsat-system" />
+    <plugin name="gz::sim::systems::Sensors" filename="gz-sim-sensors-system">
+      <render_engine>ogre2</render_engine>
+    </plugin>
+
+    <!-- GUI Setup -->
+    <gui fullscreen="false">
+      <plugin name="3D View" filename="GzScene3D">
+        <gz-gui>
+          <title>3D View</title>
+          <property type="bool" key="showTitleBar">0</property>
+          <property type="string" key="state">docked</property>
+        </gz-gui>
+        <engine>ogre2</engine>
+        <scene>scene</scene>
+        <ambient_light>0.6 0.6 0.6</ambient_light>
+        <background_color>0.7 0.85 0.95</background_color>
+        <camera_pose>-24.144 -51.576 25 0 0.6 0.8</camera_pose>
+      </plugin>
+      <plugin name="World control" filename="WorldControl">
+        <gz-gui>
+          <title>World control</title>
+          <property type="bool" key="showTitleBar">0</property>
+          <property type="bool" key="resizable">0</property>
+          <property type="double" key="height">72</property>
+          <property type="double" key="width">121</property>
+          <property type="double" key="z">1</property>
+          <property type="string" key="state">floating</property>
+          <anchors target="3D View">
+            <line own="left" target="left"/>
+            <line own="bottom" target="bottom"/>
+          </anchors>
+        </gz-gui>
+        <play_pause>1</play_pause>
+        <step>1</step>
+        <start_paused>1</start_paused>
+      </plugin>
+      <plugin name="World stats" filename="WorldStats">
+        <gz-gui>
+          <title>World stats</title>
+          <property type="bool" key="showTitleBar">0</property>
+          <property type="bool" key="resizable">0</property>
+          <property type="double" key="height">110</property>
+          <property type="double" key="width">290</property>
+          <property type="double" key="z">1</property>
+          <property type="string" key="state">floating</property>
+          <anchors target="3D View">
+            <line own="right" target="right"/>
+            <line own="bottom" target="bottom"/>
+          </anchors>
+        </gz-gui>
+        <sim_time>1</sim_time>
+        <real_time>1</real_time>
+        <real_time_factor>1</real_time_factor>
+        <iterations>1</iterations>
+      </plugin>
+      <plugin name="Entity tree" filename="EntityTree"/>
+    </gui>
+
+    <!-- Environmental Parameters -->
+    <gravity>0 0 -9.8</gravity>
+    <magnetic_field>6e-06 2.3e-05 -4.2e-05</magnetic_field>
+    <atmosphere type="adiabatic"/>
+
+    <scene>
+      <grid>false</grid>
+      <ambient>0.35 0.35 0.35 1</ambient>
+      <background>0.7 0.85 0.95 1</background>
+      <shadows>true</shadows>
+    </scene>
+
+    <!-- Sun: without a directional light, everything is lit by flat ambient
+         only - no shading, no shadows, no depth cues. This is the main fix
+         for the "flat/hard to look at" grass and poles.
+         Raised elevation (from ~62 deg to ~77 deg above horizon) to shorten
+         the long shadows/backlighting noticed when facing NE. Dimmed
+         (0.95 -> 0.55) so it contributes shape/shadow without dominating
+         the fill lights below as hard from the "wrong" facing. -->
+    <light type="directional" name="sun">
+      <cast_shadows>true</cast_shadows>
+      <pose>-9.144 -36.576 60 0 0 0</pose>
+      <diffuse>0.55 0.53 0.48 1</diffuse>
+      <specular>0 0 0 1</specular>
+      <direction>-0.2 0.1 -0.97</direction>
+      <attenuation>
+        <range>1000</range>
+        <constant>0.9</constant>
+        <linear>0.01</linear>
+        <quadratic>0.001</quadratic>
+      </attenuation>
+    </light>
+
+    <!-- Fill lights hovering over the park: a directional sun alone always
+         has one "into the sun" facing that looks backlit/long-shadowed and
+         one "away from the sun" facing that looks well-lit - that's
+         inherent to a single directional light, not fixable by angle alone.
+         Went from 3 lights (diffuse 0.6, range 60) to 6 (diffuse 0.85, range
+         90), spread across both length and width, so they actually compete
+         with the sun's intensity instead of losing to it. Still
+         non-shadow-casting - multiple shadow-casting lights tend to look
+         busy/crossed rather than natural. -->
+
+    <model name="lighting">
+      <static>true</static>
+      <pose>0 0 0 0 0 0</pose>
+      <link name="lights_link">
+        <pose>0 0 0 0 0 0</pose>
+
+    <light type="point" name="fill_light_1">
+      <cast_shadows>false</cast_shadows>
+      <pose>-4.144 -21.576 15 0 0 0</pose>
+      <diffuse>0.85 0.85 0.78 1</diffuse>
+      <specular>0 0 0 1</specular>
+      <attenuation>
+        <range>90</range>
+        <constant>0.4</constant>
+        <linear>0.015</linear>
+        <quadratic>0.0008</quadratic>
+      </attenuation>
+    </light>
+    <light type="point" name="fill_light_2">
+      <cast_shadows>false</cast_shadows>
+      <pose>4.356 -21.576 15 0 0 0</pose>
+      <diffuse>0.85 0.85 0.78 1</diffuse>
+      <specular>0 0 0 1</specular>
+      <attenuation>
+        <range>90</range>
+        <constant>0.4</constant>
+        <linear>0.015</linear>
+        <quadratic>0.0008</quadratic>
+      </attenuation>
+    </light>
+    <light type="point" name="fill_light_3">
+      <cast_shadows>false</cast_shadows>
+      <pose>-4.144 3.424 15 0 0 0</pose>
+      <diffuse>0.85 0.85 0.78 1</diffuse>
+      <specular>0 0 0 1</specular>
+      <attenuation>
+        <range>90</range>
+        <constant>0.4</constant>
+        <linear>0.015</linear>
+        <quadratic>0.0008</quadratic>
+      </attenuation>
+    </light>
+    <light type="point" name="fill_light_4">
+      <cast_shadows>false</cast_shadows>
+      <pose>4.356 3.424 15 0 0 0</pose>
+      <diffuse>0.85 0.85 0.78 1</diffuse>
+      <specular>0 0 0 1</specular>
+      <attenuation>
+        <range>90</range>
+        <constant>0.4</constant>
+        <linear>0.015</linear>
+        <quadratic>0.0008</quadratic>
+      </attenuation>
+    </light>
+    <light type="point" name="fill_light_5">
+      <cast_shadows>false</cast_shadows>
+      <pose>-4.144 28.424 15 0 0 0</pose>
+      <diffuse>0.85 0.85 0.78 1</diffuse>
+      <specular>0 0 0 1</specular>
+      <attenuation>
+        <range>90</range>
+        <constant>0.4</constant>
+        <linear>0.015</linear>
+        <quadratic>0.0008</quadratic>
+      </attenuation>
+    </light>
+    <light type="point" name="fill_light_6">
+      <cast_shadows>false</cast_shadows>
+      <pose>4.356 28.424 15 0 0 0</pose>
+      <diffuse>0.85 0.85 0.78 1</diffuse>
+      <specular>0 0 0 1</specular>
+      <attenuation>
+        <range>90</range>
+        <constant>0.4</constant>
+        <linear>0.015</linear>
+        <quadratic>0.0008</quadratic>
+      </attenuation>
+    </light>
+
+      </link>
+    </model> <!-- end lighting -->
+
+    <!--
+      GRASS GROUND PLANE
+      No dedicated "grass" primitive/material ships with Gazebo, and there is no
+      guaranteed-stable Fuel model name for it either - so this uses a large flat
+      box with a grass-green material. Swap the <material> block below for a Fuel
+      or local PBR grass texture (albedo/normal/roughness maps) if you want a
+      photoreal look; see the note in the chat reply for how to search Fuel for one.
+    -->
+    <model name='ground'>
+      <static>true</static>
+      <pose>0 0 0 0 0 0</pose>
+
+      <model name='ground_plane'>
+      <static>true</static>
+      <pose>0.000 2.286 0 0 0 0</pose>
+      <link name='link'>
+        <collision name='collision'>
+          <geometry><plane><normal>0 0 1</normal><size>80 120</size></plane></geometry>
+          <surface><friction><ode/></friction><bounce/><contact/></surface>
+        </collision>
+        <pose>0 0 0 0 -0 0</pose>
+        <inertial>
+          <pose>0 0 0 0 -0 0</pose>
+          <mass>1</mass>
+          <inertia><ixx>1</ixx><ixy>0</ixy><ixz>0</ixz><iyy>1</iyy><iyz>0</iyz><izz>1</izz></inertia>
+        </inertial>
+        <enable_wind>false</enable_wind>
+      </link>
+      <pose>0 0 0 0 -0 0</pose>
+      <self_collide>false</self_collide>
+    </model>
+    
+    <model name='hill'>
+      <static>true</static>
+      <pose>0 0 0 0 0 0</pose>
+      <link name='link'>
+        <collision name='collision'>
+          <geometry>
+            <heightmap>
+              <uri>materials/textures/hill_heightmap.png</uri>
+              <size>11.0 20.0 1.0</size>
+              <pos>3.644 8.288 0.001</pos>
+            </heightmap>
+          </geometry>
+        </collision>
+        <visual name='visual'>
+          <geometry>
+            <heightmap>
+              <uri>materials/textures/hill_heightmap.png</uri>
+              <size>11.0 20.0 1.0</size>
+              <pos>3.644 8.288 0.001</pos>
+              <texture>
+                <diffuse>materials/textures/brown_mud_leaves_01_diff_4k.jpg</diffuse>
+                <normal>materials/textures/brown_mud_leaves_01_normal_35pct.png</normal>
+                <size>2.0</size>
+              </texture>
+            </heightmap>
+          </geometry>
+          <material>
+            <ambient>1 1 1 1</ambient>
+            <diffuse>1 1 1 1</diffuse>
+            <specular>0 0 0 1</specular>
+            <pbr>
+              <metal>
+                <roughness>1.0</roughness>
+                <metalness>0.0</metalness>
+              </metal>
+            </pbr>
+          </material>
+        </visual>
+      </link>
+    </model>
+    
+    <model name='ground_grass_visual'>
+      <static>true</static>
+      <pose>0 0 0 0 0 0</pose>
+      <link name='link'>
+        <visual name='visual'>
+          <geometry>
+            <heightmap>
+              <uri>materials/textures/ground_flat_heightmap.png</uri>
+              <size>80 120 0.001</size>
+              <pos>0.0000 2.2860 0.0005</pos>
+              <texture>
+                <diffuse>materials/textures/brown_mud_leaves_01_diff_4k.jpg</diffuse>
+                <normal>materials/textures/brown_mud_leaves_01_normal_35pct.png</normal>
+                <size>2.0000</size>
+              </texture>
+            </heightmap>
+          </geometry>
+          <material>
+            <ambient>1 1 1 1</ambient>
+            <diffuse>1 1 1 1</diffuse>
+            <specular>0 0 0 1</specular>
+            <pbr>
+              <metal>
+                <roughness>1.0</roughness>
+                <metalness>0.0</metalness>
+              </metal>
+            </pbr>
+          </material>
+        </visual>
+      </link>
+    </model>
+
+    </model> <!-- end ground -->
+
+    <!--
+      NETTED FLIGHT CAGE  (UF Autonomy Park layout)
+      World origin (0,0,0) = center of the rectangle formed by the 10 poles,
+      ground level. The SW corner pole (pole_west_0) is at (-9.144, -36.576).
+      +x = East (width, 60 ft / 18.288 m)
+      +y = North (length, 240 ft / 73.152 m)
+      +z = up (net/pole height, 20 ft / 6.096 m)
+
+      10 wood poles total: 5 along the west edge (x=-9.144), 5 along the east
+      edge (x=9.144 m), spaced every 60 ft (18.288 m) along the 240 ft run
+      - this also naturally places a pole at each of the 4 corners.
+      Netting covers all 4 walls, no roof. A 6x6 ft door opening is cut at the
+      bottom of the NW corner panel (west wall, northernmost segment).
+    -->
+
+    <model name='net'>
+      <static>true</static>
+      <pose>0 0 0 0 0 0</pose>
+
+    <model name='pole_west_0'>
+      <static>true</static>
+      <pose>-9.1440 -36.5760 3.0480 0 0 0</pose>
+      <link name='link'>
+        <collision name='collision'>
+          <geometry><cylinder><radius>0.15</radius><length>6.0960</length></cylinder></geometry>
+        </collision>
+        <visual name='visual'>
+          <geometry><cylinder><radius>0.15</radius><length>6.0960</length></cylinder></geometry>
+          <material>
+            <ambient>0.36 0.25 0.16 1</ambient>
+            <diffuse>0.36 0.25 0.16 1</diffuse>
+            <specular>0 0 0 1</specular>
+          </material>
+        </visual>
+      </link>
+    </model>
+
+    <model name='pole_east_0'>
+      <static>true</static>
+      <pose>9.1440 -36.5760 3.0480 0 0 0</pose>
+      <link name='link'>
+        <collision name='collision'>
+          <geometry><cylinder><radius>0.15</radius><length>6.0960</length></cylinder></geometry>
+        </collision>
+        <visual name='visual'>
+          <geometry><cylinder><radius>0.15</radius><length>6.0960</length></cylinder></geometry>
+          <material>
+            <ambient>0.36 0.25 0.16 1</ambient>
+            <diffuse>0.36 0.25 0.16 1</diffuse>
+            <specular>0 0 0 1</specular>
+          </material>
+        </visual>
+      </link>
+    </model>
+
+    <model name='pole_west_1'>
+      <static>true</static>
+      <pose>-9.1440 -18.2880 3.0480 0 0 0</pose>
+      <link name='link'>
+        <collision name='collision'>
+          <geometry><cylinder><radius>0.15</radius><length>6.0960</length></cylinder></geometry>
+        </collision>
+        <visual name='visual'>
+          <geometry><cylinder><radius>0.15</radius><length>6.0960</length></cylinder></geometry>
+          <material>
+            <ambient>0.36 0.25 0.16 1</ambient>
+            <diffuse>0.36 0.25 0.16 1</diffuse>
+            <specular>0 0 0 1</specular>
+          </material>
+        </visual>
+      </link>
+    </model>
+
+    <model name='pole_east_1'>
+      <static>true</static>
+      <pose>9.1440 -18.2880 3.0480 0 0 0</pose>
+      <link name='link'>
+        <collision name='collision'>
+          <geometry><cylinder><radius>0.15</radius><length>6.0960</length></cylinder></geometry>
+        </collision>
+        <visual name='visual'>
+          <geometry><cylinder><radius>0.15</radius><length>6.0960</length></cylinder></geometry>
+          <material>
+            <ambient>0.36 0.25 0.16 1</ambient>
+            <diffuse>0.36 0.25 0.16 1</diffuse>
+            <specular>0 0 0 1</specular>
+          </material>
+        </visual>
+      </link>
+    </model>
+
+    <model name='pole_west_2'>
+      <static>true</static>
+      <pose>-9.1440 0.0000 3.0480 0 0 0</pose>
+      <link name='link'>
+        <collision name='collision'>
+          <geometry><cylinder><radius>0.15</radius><length>6.0960</length></cylinder></geometry>
+        </collision>
+        <visual name='visual'>
+          <geometry><cylinder><radius>0.15</radius><length>6.0960</length></cylinder></geometry>
+          <material>
+            <ambient>0.36 0.25 0.16 1</ambient>
+            <diffuse>0.36 0.25 0.16 1</diffuse>
+            <specular>0 0 0 1</specular>
+          </material>
+        </visual>
+      </link>
+    </model>
+
+    <model name='pole_east_2'>
+      <static>true</static>
+      <pose>9.1440 0.0000 3.0480 0 0 0</pose>
+      <link name='link'>
+        <collision name='collision'>
+          <geometry><cylinder><radius>0.15</radius><length>6.0960</length></cylinder></geometry>
+        </collision>
+        <visual name='visual'>
+          <geometry><cylinder><radius>0.15</radius><length>6.0960</length></cylinder></geometry>
+          <material>
+            <ambient>0.36 0.25 0.16 1</ambient>
+            <diffuse>0.36 0.25 0.16 1</diffuse>
+            <specular>0 0 0 1</specular>
+          </material>
+        </visual>
+      </link>
+    </model>
+
+    <model name='pole_west_3'>
+      <static>true</static>
+      <pose>-9.1440 18.2880 3.0480 0 0 0</pose>
+      <link name='link'>
+        <collision name='collision'>
+          <geometry><cylinder><radius>0.15</radius><length>6.0960</length></cylinder></geometry>
+        </collision>
+        <visual name='visual'>
+          <geometry><cylinder><radius>0.15</radius><length>6.0960</length></cylinder></geometry>
+          <material>
+            <ambient>0.36 0.25 0.16 1</ambient>
+            <diffuse>0.36 0.25 0.16 1</diffuse>
+            <specular>0 0 0 1</specular>
+          </material>
+        </visual>
+      </link>
+    </model>
+
+    <model name='pole_east_3'>
+      <static>true</static>
+      <pose>9.1440 18.2880 3.0480 0 0 0</pose>
+      <link name='link'>
+        <collision name='collision'>
+          <geometry><cylinder><radius>0.15</radius><length>6.0960</length></cylinder></geometry>
+        </collision>
+        <visual name='visual'>
+          <geometry><cylinder><radius>0.15</radius><length>6.0960</length></cylinder></geometry>
+          <material>
+            <ambient>0.36 0.25 0.16 1</ambient>
+            <diffuse>0.36 0.25 0.16 1</diffuse>
+            <specular>0 0 0 1</specular>
+          </material>
+        </visual>
+      </link>
+    </model>
+
+    <model name='pole_west_4'>
+      <static>true</static>
+      <pose>-9.1440 36.5760 3.0480 0 0 0</pose>
+      <link name='link'>
+        <collision name='collision'>
+          <geometry><cylinder><radius>0.15</radius><length>6.0960</length></cylinder></geometry>
+        </collision>
+        <visual name='visual'>
+          <geometry><cylinder><radius>0.15</radius><length>6.0960</length></cylinder></geometry>
+          <material>
+            <ambient>0.36 0.25 0.16 1</ambient>
+            <diffuse>0.36 0.25 0.16 1</diffuse>
+            <specular>0 0 0 1</specular>
+          </material>
+        </visual>
+      </link>
+    </model>
+
+    <model name='pole_east_4'>
+      <static>true</static>
+      <pose>9.1440 36.5760 3.0480 0 0 0</pose>
+      <link name='link'>
+        <collision name='collision'>
+          <geometry><cylinder><radius>0.15</radius><length>6.0960</length></cylinder></geometry>
+        </collision>
+        <visual name='visual'>
+          <geometry><cylinder><radius>0.15</radius><length>6.0960</length></cylinder></geometry>
+          <material>
+            <ambient>0.36 0.25 0.16 1</ambient>
+            <diffuse>0.36 0.25 0.16 1</diffuse>
+            <specular>0 0 0 1</specular>
+          </material>
+        </visual>
+      </link>
+    </model>
+
+    <model name='net_west_0'>
+      <static>true</static>
+      <pose>-9.1440 -27.4320 3.0480 0 0 0</pose>
+      <link name='link'>
+        <visual name='visual'>
+          <geometry><box><size>0.0200 18.2880 6.0960</size></box></geometry>
+          <material>
+            <ambient>0.85 0.85 0.85 1</ambient>
+            <diffuse>0.85 0.85 0.85 1</diffuse>
+            <specular>0 0 0 1</specular>
+          </material>
+          <transparency>0.65</transparency>
+        </visual>
+      </link>
+    </model>
+
+    <model name='net_west_1'>
+      <static>true</static>
+      <pose>-9.1440 -9.1440 3.0480 0 0 0</pose>
+      <link name='link'>
+        <visual name='visual'>
+          <geometry><box><size>0.0200 18.2880 6.0960</size></box></geometry>
+          <material>
+            <ambient>0.85 0.85 0.85 1</ambient>
+            <diffuse>0.85 0.85 0.85 1</diffuse>
+            <specular>0 0 0 1</specular>
+          </material>
+          <transparency>0.65</transparency>
+        </visual>
+      </link>
+    </model>
+
+    <model name='net_west_2'>
+      <static>true</static>
+      <pose>-9.1440 9.1440 3.0480 0 0 0</pose>
+      <link name='link'>
+        <visual name='visual'>
+          <geometry><box><size>0.0200 18.2880 6.0960</size></box></geometry>
+          <material>
+            <ambient>0.85 0.85 0.85 1</ambient>
+            <diffuse>0.85 0.85 0.85 1</diffuse>
+            <specular>0 0 0 1</specular>
+          </material>
+          <transparency>0.65</transparency>
+        </visual>
+      </link>
+    </model>
+
+    <model name='net_west_3_main'>
+      <static>true</static>
+      <pose>-9.1440 26.5176 3.0480 0 0 0</pose>
+      <link name='link'>
+        <visual name='visual'>
+          <geometry><box><size>0.0200 16.4592 6.0960</size></box></geometry>
+          <material>
+            <ambient>0.85 0.85 0.85 1</ambient>
+            <diffuse>0.85 0.85 0.85 1</diffuse>
+            <specular>0 0 0 1</specular>
+          </material>
+          <transparency>0.65</transparency>
+        </visual>
+      </link>
+    </model>
+
+    <model name='net_west_3_header'>
+      <static>true</static>
+      <pose>-9.1440 35.6616 3.9624 0 0 0</pose>
+      <link name='link'>
+        <visual name='visual'>
+          <geometry><box><size>0.0200 1.8288 4.2672</size></box></geometry>
+          <material>
+            <ambient>0.85 0.85 0.85 1</ambient>
+            <diffuse>0.85 0.85 0.85 1</diffuse>
+            <specular>0 0 0 1</specular>
+          </material>
+          <transparency>0.65</transparency>
+        </visual>
+      </link>
+    </model>
+
+    <model name='net_east_0'>
+      <static>true</static>
+      <pose>9.1440 -27.4320 3.0480 0 0 0</pose>
+      <link name='link'>
+        <visual name='visual'>
+          <geometry><box><size>0.0200 18.2880 6.0960</size></box></geometry>
+          <material>
+            <ambient>0.85 0.85 0.85 1</ambient>
+            <diffuse>0.85 0.85 0.85 1</diffuse>
+            <specular>0 0 0 1</specular>
+          </material>
+          <transparency>0.65</transparency>
+        </visual>
+      </link>
+    </model>
+
+    <model name='net_east_1'>
+      <static>true</static>
+      <pose>9.1440 -9.1440 3.0480 0 0 0</pose>
+      <link name='link'>
+        <visual name='visual'>
+          <geometry><box><size>0.0200 18.2880 6.0960</size></box></geometry>
+          <material>
+            <ambient>0.85 0.85 0.85 1</ambient>
+            <diffuse>0.85 0.85 0.85 1</diffuse>
+            <specular>0 0 0 1</specular>
+          </material>
+          <transparency>0.65</transparency>
+        </visual>
+      </link>
+    </model>
+
+    <model name='net_east_2'>
+      <static>true</static>
+      <pose>9.1440 9.1440 3.0480 0 0 0</pose>
+      <link name='link'>
+        <visual name='visual'>
+          <geometry><box><size>0.0200 18.2880 6.0960</size></box></geometry>
+          <material>
+            <ambient>0.85 0.85 0.85 1</ambient>
+            <diffuse>0.85 0.85 0.85 1</diffuse>
+            <specular>0 0 0 1</specular>
+          </material>
+          <transparency>0.65</transparency>
+        </visual>
+      </link>
+    </model>
+
+    <model name='net_east_3'>
+      <static>true</static>
+      <pose>9.1440 27.4320 3.0480 0 0 0</pose>
+      <link name='link'>
+        <visual name='visual'>
+          <geometry><box><size>0.0200 18.2880 6.0960</size></box></geometry>
+          <material>
+            <ambient>0.85 0.85 0.85 1</ambient>
+            <diffuse>0.85 0.85 0.85 1</diffuse>
+            <specular>0 0 0 1</specular>
+          </material>
+          <transparency>0.65</transparency>
+        </visual>
+      </link>
+    </model>
+
+    <model name='net_south'>
+      <static>true</static>
+      <pose>0.0000 -36.5760 3.0480 0 0 0</pose>
+      <link name='link'>
+        <visual name='visual'>
+          <geometry><box><size>18.2880 0.0200 6.0960</size></box></geometry>
+          <material>
+            <ambient>0.85 0.85 0.85 1</ambient>
+            <diffuse>0.85 0.85 0.85 1</diffuse>
+            <specular>0 0 0 1</specular>
+          </material>
+          <transparency>0.65</transparency>
+        </visual>
+      </link>
+    </model>
+
+    <model name='net_north'>
+      <static>true</static>
+      <pose>0.0000 36.5760 3.0480 0 0 0</pose>
+      <link name='link'>
+        <visual name='visual'>
+          <geometry><box><size>18.2880 0.0200 6.0960</size></box></geometry>
+          <material>
+            <ambient>0.85 0.85 0.85 1</ambient>
+            <diffuse>0.85 0.85 0.85 1</diffuse>
+            <specular>0 0 0 1</specular>
+          </material>
+          <transparency>0.65</transparency>
+        </visual>
+      </link>
+    </model>
+
+    </model> <!-- end net -->
+
+    <model name='portable_shed'>
+      <static>true</static>
+      <pose>0.0000 39.6240 1.6002 0 0 0</pose>
+      <link name='link'>
+        <collision name='collision'>
+          <geometry><box><size>4.8768 3.0480 3.2004</size></box></geometry>
+        </collision>
+        <visual name='visual'>
+          <geometry><box><size>4.8768 3.0480 3.2004</size></box></geometry>
+          <material>
+            <ambient>0.82 0.80 0.72 1</ambient>
+            <diffuse>0.82 0.80 0.72 1</diffuse>
+            <specular>0.05 0.05 0.05 1</specular>
+          </material>
+        </visual>
+      </link>
+    </model>
+
+    <model name="trees">
+      <static>true</static>
+      <pose>0 0 0 0 0 0</pose>
+
+    <include>
+      <uri>https://fuel.gazebosim.org/1.0/OpenRobotics/models/Oak tree</uri>
+      <name>oak_tree_0</name>
+      <pose>-14.144 -26.576 0 0 0 0</pose>
+    </include>
+
+    <include>
+      <uri>https://fuel.gazebosim.org/1.0/OpenRobotics/models/Oak tree</uri>
+      <name>oak_tree_1</name>
+      <pose>-14.144 0.000 0 0 0 0</pose>
+    </include>
+
+    <include>
+      <uri>https://fuel.gazebosim.org/1.0/OpenRobotics/models/Oak tree</uri>
+      <name>oak_tree_2</name>
+      <pose>-14.144 26.424 0 0 0 0</pose>
+    </include>
+
+    <include>
+      <uri>https://fuel.gazebosim.org/1.0/OpenRobotics/models/Oak tree</uri>
+      <name>oak_tree_3</name>
+      <pose>14.144 -26.576 0 0 0 0</pose>
+    </include>
+
+    <include>
+      <uri>https://fuel.gazebosim.org/1.0/OpenRobotics/models/Oak tree</uri>
+      <name>oak_tree_4</name>
+      <pose>14.144 0.000 0 0 0 0</pose>
+    </include>
+
+    <include>
+      <uri>https://fuel.gazebosim.org/1.0/OpenRobotics/models/Oak tree</uri>
+      <name>oak_tree_5</name>
+      <pose>14.144 26.424 0 0 0 0</pose>
+    </include>
+
+    <include>
+      <uri>https://fuel.gazebosim.org/1.0/OpenRobotics/models/Oak tree</uri>
+      <name>oak_tree_6</name>
+      <pose>-4.144 46.148 0 0 0 0</pose>
+    </include>
+
+    <include>
+      <uri>https://fuel.gazebosim.org/1.0/OpenRobotics/models/Oak tree</uri>
+      <name>oak_tree_7</name>
+      <pose>-6.144 -41.576 0 0 0 0</pose>
+    </include>
+
+    </model> <!-- end trees -->
+
+    <spherical_coordinates>
+      <surface_model>EARTH_WGS84</surface_model>
+      <world_frame_orientation>ENU</world_frame_orientation>
+      <latitude_deg>29.6282091</latitude_deg>
+      <longitude_deg>-82.36033457</longitude_deg>
+      <elevation>24.27512038</elevation>
+      <heading_deg>55.4969</heading_deg>
+    </spherical_coordinates>
+  </world>
+</sdf>

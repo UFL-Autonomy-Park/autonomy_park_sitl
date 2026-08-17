@@ -1,0 +1,476 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<sdf version='1.9'>
+  <model name='homebrew_base'>
+    <pose>0 0 .162 0 0 0</pose>
+    <self_collide>false</self_collide>
+    <static>false</static>
+    <link name="base_link">
+      <self_collide>false</self_collide>
+      <gravity>true</gravity>
+      <velocity_decay />
+
+      <inertial>
+        <mass>2.27304650076778</mass>
+        <inertia>
+          <ixx>0.0042284876572578</ixx>
+          <ixy>0</ixy>
+          <ixz>0</ixz>
+          <iyy>0.00572258822097371</iyy>
+          <iyz>0</iyz>
+          <izz>0.00831273635864134</izz>
+        </inertia>
+      </inertial>
+
+      <visual name="base_link_visual">
+        <material>
+          <ambient>0.1 0.1 0.1 1</ambient>
+          <diffuse>0.1 0.1 0.2 1</diffuse>
+          <specular>0 0 0 0</specular>
+          <emissive>0 0 0 1</emissive>
+        </material>
+        <pose>0 0 0 0 0 0</pose>
+        <geometry>
+          <mesh>
+            <scale>1 1 1</scale>
+            <uri>model://homebrew_base/meshes/base_link.STL</uri>
+          </mesh>
+        </geometry>
+      </visual>
+
+      <!-- Collision proxy measured directly from base_link.STL's own triangles (583k tris - far too dense to
+           collide directly), not scaled/guessed from x500. Main plate + battery hump match the mesh's bounding
+           envelope at those heights. The two landing rails are fattened to swallow their actual inverted-T taper
+           (wide foot narrowing to a thin web) into one solid box each, since a thin web modeled faithfully is
+           exactly the kind of geometry that tunnels/jitters on landing in a real-time physics step. -->
+      <collision name="base_link_collision_hub">
+        <pose>0 0 .049 0 0 0</pose>
+        <geometry>
+          <box>
+            <size>0.546 0.544 0.038</size>
+          </box>
+        </geometry>
+        <surface>
+          <contact>
+            <ode>
+              <min_depth>0.001</min_depth>
+              <max_vel>0</max_vel>
+            </ode>
+          </contact>
+          <friction>
+            <ode/>
+          </friction>
+        </surface>
+      </collision>
+      <collision name="base_link_collision_battery">
+        <pose>0 0 .089 0 0 0</pose>
+        <geometry>
+          <box>
+            <size>0.20 0.15 0.043</size>
+          </box>
+        </geometry>
+        <surface>
+          <contact>
+            <ode>
+              <min_depth>0.001</min_depth>
+              <max_vel>0</max_vel>
+            </ode>
+          </contact>
+          <friction>
+            <ode/>
+          </friction>
+        </surface>
+      </collision>
+      <collision name="base_link_collision_rail_left">
+        <pose>0 -0.185 -.066 0 0 0</pose>
+        <geometry>
+          <box>
+            <size>0.20 0.03 0.192</size>
+          </box>
+        </geometry>
+        <surface>
+          <contact>
+            <ode>
+              <min_depth>0.001</min_depth>
+              <max_vel>0</max_vel>
+            </ode>
+          </contact>
+          <friction>
+            <ode/>
+          </friction>
+        </surface>
+      </collision>
+      <collision name="base_link_collision_rail_right">
+        <pose>0 0.185 -.066 0 0 0</pose>
+        <geometry>
+          <box>
+            <size>0.20 0.03 0.192</size>
+          </box>
+        </geometry>
+        <surface>
+          <contact>
+            <ode>
+              <min_depth>0.001</min_depth>
+              <max_vel>0</max_vel>
+            </ode>
+          </contact>
+          <friction>
+            <ode/>
+          </friction>
+        </surface>
+      </collision>
+
+      <sensor name="air_pressure_sensor" type="air_pressure">
+        <always_on>1</always_on>
+        <update_rate>50</update_rate>
+        <air_pressure>
+          <!-- Noise modeled after BMP390 -->
+          <pressure>
+            <noise type="gaussian">
+              <mean>0</mean>
+              <stddev>3</stddev>
+            </noise>
+          </pressure>
+        </air_pressure>
+      </sensor>
+      <sensor name="magnetometer_sensor" type="magnetometer">
+        <always_on>1</always_on>
+        <update_rate>100</update_rate>
+        <magnetometer>
+          <!-- 3mgauss RMS: NOTE: noise is in tesla but sensor reports data in gauss -->
+          <!-- Noise modeled after IIS2MDC -->
+          <x>
+            <noise type="gaussian">
+              <stddev>0.0001</stddev>
+            </noise>
+          </x>
+          <y>
+            <noise type="gaussian">
+              <stddev>0.0001</stddev>
+            </noise>
+          </y>
+          <z>
+            <noise type="gaussian">
+              <stddev>0.0001</stddev>
+            </noise>
+          </z>
+        </magnetometer>
+      </sensor>
+      <sensor name="imu_sensor" type="imu">
+        <always_on>1</always_on>
+        <update_rate>250</update_rate>
+        <imu>
+          <angular_velocity>
+            <!-- Noise modeled after IIM42653 -->
+            <!-- 0.05 deg/s converted to rad/s -->
+            <x>
+              <noise type="gaussian">
+                <mean>0.0</mean>
+                <stddev>0.0008726646</stddev>
+              </noise>
+            </x>
+            <y>
+              <noise type="gaussian">
+                <mean>0.0</mean>
+                <stddev>0.0008726646</stddev>
+              </noise>
+            </y>
+            <z>
+              <noise type="gaussian">
+                <mean>0.0</mean>
+                <stddev>0.0008726646</stddev>
+              </noise>
+            </z>
+          </angular_velocity>
+          <linear_acceleration>
+            <!-- Noise modeled after IIM42653 -->
+            <!-- X & Y axis: 0.65 mg-rms converted to m/ss -->
+            <x>
+              <noise type="gaussian">
+                <mean>0.0</mean>
+                <stddev>0.00637</stddev>
+              </noise>
+            </x>
+            <y>
+              <noise type="gaussian">
+                <mean>0.0</mean>
+                <stddev>0.00637</stddev>
+              </noise>
+            </y>
+            <!-- Z axis: 0.70 mg-rms converted to m/ss-->
+            <z>
+              <noise type="gaussian">
+                <mean>0.0</mean>
+                <stddev>0.00686</stddev>
+              </noise>
+            </z>
+          </linear_acceleration>
+        </imu>
+      </sensor>
+      <sensor name="navsat_sensor" type="navsat">
+        <always_on>1</always_on>
+        <update_rate>30</update_rate>
+      </sensor>
+
+    </link>
+    <link name="rotor_0">
+      <gravity>true</gravity>
+      <self_collide>false</self_collide>
+      <velocity_decay />
+      <pose>0.2418 -0.2446 0.076024 0 0 0</pose><!--motor poses are fine-->
+      <inertial>
+        <!-- Mass/inertia from T-Motor U5 KV400 datasheet (156g, Φ42.5x37.5mm), inertia estimated as a solid cylinder -->
+        <pose>0 0 0.006 0 0 0</pose>
+        <mass>0.156</mass>
+        <inertia>
+          <ixx>0.00003589</ixx>
+          <ixy>0</ixy>
+          <ixz>0</ixz>
+          <iyy>0.00003589</iyy>
+          <iyz>0</iyz>
+          <izz>0.00003522</izz>
+        </inertia>
+      </inertial>
+      <!-- Own CAD: this mesh is the combined motor+prop assembly, not motor-only -->
+      <visual name="rotor_0_visual">
+        <pose>0 0 0 0 0 0</pose>
+        <geometry>
+          <mesh>
+            <scale>1 1 1</scale>
+            <uri>model://homebrew_base/meshes/Motor_ccw.STL</uri>
+          </mesh>
+        </geometry>
+      </visual>
+      <collision name="rotor_0_collision">
+        <pose>0 0 0 0 0 0 </pose>
+        <geometry>
+          <box>
+            <!-- Measured from Motor_ccw.STL's own bounding box (blade axis along local X) -->
+            <size>0.386 0.0511 0.0471</size>
+          </box>
+        </geometry>
+        <surface>
+          <contact>
+            <ode>
+              <min_depth>0.001</min_depth>
+              <max_vel>0</max_vel>
+            </ode>
+          </contact>
+          <friction>
+            <ode />
+          </friction>
+        </surface>
+      </collision>
+    </link>
+    <joint name="rotor_0_joint" type="revolute">
+      <parent>base_link</parent>
+      <child>rotor_0</child>
+      <axis>
+        <xyz>0 0 1</xyz>
+        <limit>
+          <lower>-1e+16</lower>
+          <upper>1e+16</upper>
+        </limit>
+        <dynamics>
+          <spring_reference>0</spring_reference>
+          <spring_stiffness>0</spring_stiffness>
+        </dynamics>
+      </axis>
+    </joint>
+
+    <link name="rotor_1">
+      <gravity>true</gravity>
+      <self_collide>false</self_collide>
+      <velocity_decay />
+      <pose>-0.2418 0.2446 0.076024 0 0 0</pose>
+      <inertial>
+        <!-- Mass/inertia from T-Motor U5 KV400 datasheet (156g, Φ42.5x37.5mm), inertia estimated as a solid cylinder -->
+        <pose>0 0 0.006 0 0 0</pose>
+        <mass>0.156</mass>
+        <inertia>
+          <ixx>0.00003589</ixx>
+          <ixy>0</ixy>
+          <ixz>0</ixz>
+          <iyy>0.00003589</iyy>
+          <iyz>0</iyz>
+          <izz>0.00003522</izz>
+        </inertia>
+      </inertial>
+      <!-- Own CAD: this mesh is the combined motor+prop assembly, not motor-only -->
+      <visual name="rotor_1_visual">
+        <pose>0 0 0 0 0 0</pose>
+        <geometry>
+          <mesh>
+            <scale>1 1 1</scale>
+            <uri>model://homebrew_base/meshes/Motor_ccw.STL</uri>
+          </mesh>
+        </geometry>
+      </visual>
+      <collision name="rotor_1_collision">
+        <pose>0 0 0 0 0 0 </pose>
+        <geometry>
+          <box>
+            <!-- Measured from Motor_ccw.STL's own bounding box (blade axis along local X) -->
+            <size>0.386 0.0511 0.0471</size>
+          </box>
+        </geometry>
+        <surface>
+          <contact>
+            <ode>
+              <min_depth>0.001</min_depth>
+              <max_vel>0</max_vel>
+            </ode>
+          </contact>
+          <friction>
+            <ode />
+          </friction>
+        </surface>
+      </collision>
+    </link>
+    <joint name="rotor_1_joint" type="revolute">
+      <parent>base_link</parent>
+      <child>rotor_1</child>
+      <axis>
+        <xyz>0 0 1</xyz>
+        <limit>
+          <lower>-1e+16</lower>
+          <upper>1e+16</upper>
+        </limit>
+        <dynamics>
+          <spring_reference>0</spring_reference>
+          <spring_stiffness>0</spring_stiffness>
+        </dynamics>
+      </axis>
+    </joint>
+
+    <link name="rotor_2">
+      <gravity>true</gravity>
+      <self_collide>false</self_collide>
+      <velocity_decay />
+      <pose>0.2418 0.2446 0.0760238662373196 0 0 0</pose>
+      <inertial>
+        <!-- Mass/inertia from T-Motor U5 KV400 datasheet (156g, Φ42.5x37.5mm), inertia estimated as a solid cylinder -->
+        <pose>0 0 0.006 0 0 0</pose>
+        <mass>0.156</mass>
+        <inertia>
+          <ixx>0.00003589</ixx>
+          <ixy>0</ixy>
+          <ixz>0</ixz>
+          <iyy>0.00003589</iyy>
+          <iyz>0</iyz>
+          <izz>0.00003522</izz>
+        </inertia>
+      </inertial>
+      <!-- Own CAD: this mesh is the combined motor+prop assembly, not motor-only -->
+      <visual name="rotor_2_visual">
+        <pose>0 0 0 0 0 0</pose>
+        <geometry>
+          <mesh>
+            <scale>1 1 1</scale>
+            <uri>model://homebrew_base/meshes/Motor_cw.STL</uri>
+          </mesh>
+        </geometry>
+      </visual>
+      <collision name="rotor_2_collision">
+        <pose>0 0 0 0 0 0 </pose>
+        <geometry>
+          <box>
+            <!-- Measured from Motor_cw.STL's own bounding box (blade axis along local Y, unlike the ccw mesh) -->
+            <size>0.1367 0.3646 0.0471</size>
+          </box>
+        </geometry>
+        <surface>
+          <contact>
+            <ode>
+              <min_depth>0.001</min_depth>
+              <max_vel>0</max_vel>
+            </ode>
+          </contact>
+          <friction>
+            <ode />
+          </friction>
+        </surface>
+      </collision>
+    </link>
+    <joint name="rotor_2_joint" type="revolute">
+      <parent>base_link</parent>
+      <child>rotor_2</child>
+      <axis>
+        <xyz>0 0 1</xyz>
+        <limit>
+          <lower>-1e+16</lower>
+          <upper>1e+16</upper>
+        </limit>
+        <dynamics>
+          <spring_reference>0</spring_reference>
+          <spring_stiffness>0</spring_stiffness>
+        </dynamics>
+      </axis>
+    </joint>
+
+    <link name="rotor_3">
+      <gravity>true</gravity>
+      <self_collide>false</self_collide>
+      <velocity_decay />
+      <pose>-0.2418 -0.2446 0.0760238662373188 0 0 0</pose>
+      <inertial>
+        <!-- Mass/inertia from T-Motor U5 KV400 datasheet (156g, Φ42.5x37.5mm), inertia estimated as a solid cylinder -->
+        <pose>0 0 0.006 0 0 0</pose>
+        <mass>0.156</mass>
+        <inertia>
+          <ixx>0.00003589</ixx>
+          <ixy>0</ixy>
+          <ixz>0</ixz>
+          <iyy>0.00003589</iyy>
+          <iyz>0</iyz>
+          <izz>0.00003522</izz>
+        </inertia>
+      </inertial>
+      <!-- Own CAD: this mesh is the combined motor+prop assembly, not motor-only -->
+      <visual name="rotor_3_visual">
+        <pose>0 0 0 0 0 0</pose>
+        <geometry>
+          <mesh>
+            <scale>1 1 1</scale>
+            <uri>model://homebrew_base/meshes/Motor_cw.STL</uri>
+          </mesh>
+        </geometry>
+      </visual>
+      <collision name="rotor_3_collision">
+        <pose>0 0 0 0 0 0 </pose>
+        <geometry>
+          <box>
+            <!-- Measured from Motor_cw.STL's own bounding box (blade axis along local Y, unlike the ccw mesh) -->
+            <size>0.1367 0.3646 0.0471</size>
+          </box>
+        </geometry>
+        <surface>
+          <contact>
+            <ode>
+              <min_depth>0.001</min_depth>
+              <max_vel>0</max_vel>
+            </ode>
+          </contact>
+          <friction>
+            <ode />
+          </friction>
+        </surface>
+      </collision>
+    </link>
+    <joint name="rotor_3_joint" type="revolute">
+      <parent>base_link</parent>
+      <child>rotor_3</child>
+      <axis>
+        <xyz>0 0 1</xyz>
+        <limit>
+          <lower>-1e+16</lower>
+          <upper>1e+16</upper>
+        </limit>
+        <dynamics>
+          <spring_reference>0</spring_reference>
+          <spring_stiffness>0</spring_stiffness>
+        </dynamics>
+      </axis>
+    </joint>
+
+  </model>
+</sdf>
