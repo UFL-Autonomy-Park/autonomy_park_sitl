@@ -74,7 +74,7 @@
     </gui>
     <!-- Environmental Parameters -->
     <gravity>0 0 -9.8</gravity>
-    <magnetic_field>-2.704700e-06 2.403450e-05 -3.845770e-05</magnetic_field>
+    <magnetic_field>6e-06 2.3e-05 -4.2e-05</magnetic_field>
     <atmosphere type="adiabatic"/>
     <scene>
       <grid>true</grid>
@@ -199,6 +199,7 @@
       <pose>0 0 0 0 -0 0</pose>
       <self_collide>false</self_collide>
     </model>
+
 <!--    
     <model name='hill'>
       <static>true</static>
@@ -272,6 +273,7 @@
       NETTED FLIGHT CAGE  (UF Autonomy Park layout)
       
       The top of the net is removed for easier panning.
+
       +x = length (240 ft / 73.152 m)
       +y = width (60 ft / 18.288 m; previously the +x/E-W run)
       +z = up (net/pole height, 20 ft / 6.096 m)
@@ -280,176 +282,6 @@
       <static>true</static>
       <pose>0 0 0 0 0 0</pose>
     <model name='pole_0'>
-      <static>true</static>
-      <pose>-36.5760 -9.1440 3.0480 0 0 0</pose>
-      <link name='link'>
-        <collision name='collision'>
-          <geometry><cylinder><radius>0.15</radius><length>6.0960</length></cylinder></geometry>
-        </collision>
-        <visual name='visual'>
-          <geometry><cylinder><radius>0.15</radius><length>6.0960</length></cylinder></geometry>
-          <material>
-            <ambient>0.36 0.25 0.16 1</ambient>
-            <diffuse>0.36 0.25 0.16 1</diffuse>
-            <specular>0 0 0 1</specular>
-          </material>
-        </visual>
-      </link>
-    </model>
-    <model name='pole_1'>
-      <static>true</static>
-      <pose>-36.5760 9.1440 3.0480 0 0 0</pose>
-      <link name='link'>
-        <collision name='collision'>
-          <geometry><cylinder><radius>0.15</radius><length>6.0960</length></cylinder></geometry>
-        </collision>
-        <visual name='visual'>
-          <geometry><cylinder><radius>0.15</radius><length>6.0960</length></cylinder></geometry>
-          <material>
-            <ambient>0.36 0.25 0.16 1</ambient>
-            <diffuse>0.36 0.25 0.16 1</diffuse>
-            <specular>0 0 0 1</specular>
-          </material>
-        </visual>
-      </link>
-    </model>
-    <model name='pole_2'>
-      <static>true</static>
-      <pose>-21.9456 -9.1440 3.0480 0 0 0</pose>
-      <link name='link'>
-        <collision name='collision'>
-          <geometry><cylinder><radius>0.15</radius><length>6.0960</length></cylinder></geometry>
-        </collision>
-        <visual name='visual'>
-          <geometry><cylinder><radius>0.15</radius><length>6.0960</length></cylinder></geometry>
-          <material>
-            <ambient>0.36 0.25 0.16 1</ambient>
-            <diffuse>0.36 0.25 0.16 1</diffuse>
-            <specular>0 0 0 1</specular>
-          </material>
-        </visual>
-      </link>
-    </model>
-    <model name='pole_3'>
-      <static>true</static>
-      <pose>-21.9456 9.1440 3.0480 0 0 0</pose>
-      <link name='link'>
-        <collision name='collision'>
-          <geometry><cylinder><radius>0.15</radius><length>6.0960</length></cylinder></geometry>
-        </collision>
-        <visual name='visual'>
-          <geometry><cylinder><radius>0.15</radius><length>6.0960</length></cylinder></geometry>
-          <material>
-            <ambient>0.36 0.25 0.16 1</ambient>
-            <diffuse>0.36 0.25 0.16 1</diffuse>
-            <specular>0 0 0 1</specular>
-          </material>
-        </visual>
-      </link>
-    </model>
-    <model name='pole_4'>
-      <static>true</static>
-      <pose>-7.3152 -9.1440 3.0480 0 0 0</pose>
-      <link name='link'>
-        <collision name='collision'>
-          <geometry><cylinder><radius>0.15</radius><length>6.0960</length></cylinder></geometry>
-        </collision>
-        <visual name='visual'>
-          <geometry><cylinder><radius>0.15</radius><length>6.0960</length></cylinder></geometry>
-          <material>
-            <ambient>0.36 0.25 0.16 1</ambient>
-            <diffuse>0.36 0.25 0.16 1</diffuse>
-            <specular>0 0 0 1</specular>
-          </material>
-        </visual>
-      </link>
-    </model>
-    <model name='pole_5'>
-      <static>true</static>
-      <pose>-7.3152 9.1440 3.0480 0 0 0</pose>
-      <link name='link'>
-        <collision name='collision'>
-          <geometry><cylinder><radius>0.15</radius><length>6.0960</length></cylinder></geometry>
-        </collision>
-        <visual name='visual'>
-          <geometry><cylinder><radius>0.15</radius><length>6.0960</length></cylinder></geometry>
-          <material>
-            <ambient>0.36 0.25 0.16 1</ambient>
-            <diffuse>0.36 0.25 0.16 1</diffuse>
-            <specular>0 0 0 1</specular>
-          </material>
-        </visual>
-      </link>
-    </model>
-    <model name='pole_6'>
-      <static>true</static>
-      <pose>7.3152 -9.1440 3.0480 0 0 0</pose>
-      <link name='link'>
-        <collision name='collision'>
-          <geometry><cylinder><radius>0.15</radius><length>6.0960</length></cylinder></geometry>
-        </collision>
-        <visual name='visual'>
-          <geometry><cylinder><radius>0.15</radius><length>6.0960</length></cylinder></geometry>
-          <material>
-            <ambient>0.36 0.25 0.16 1</ambient>
-            <diffuse>0.36 0.25 0.16 1</diffuse>
-            <specular>0 0 0 1</specular>
-          </material>
-        </visual>
-      </link>
-    </model>
-    <model name='pole_7'>
-      <static>true</static>
-      <pose>7.3152 9.1440 3.0480 0 0 0</pose>
-      <link name='link'>
-        <collision name='collision'>
-          <geometry><cylinder><radius>0.15</radius><length>6.0960</length></cylinder></geometry>
-        </collision>
-        <visual name='visual'>
-          <geometry><cylinder><radius>0.15</radius><length>6.0960</length></cylinder></geometry>
-          <material>
-            <ambient>0.36 0.25 0.16 1</ambient>
-            <diffuse>0.36 0.25 0.16 1</diffuse>
-            <specular>0 0 0 1</specular>
-          </material>
-        </visual>
-      </link>
-    </model>
-    <model name='pole_8'>
-      <static>true</static>
-      <pose>21.9456 -9.1440 3.0480 0 0 0</pose>
-      <link name='link'>
-        <collision name='collision'>
-          <geometry><cylinder><radius>0.15</radius><length>6.0960</length></cylinder></geometry>
-        </collision>
-        <visual name='visual'>
-          <geometry><cylinder><radius>0.15</radius><length>6.0960</length></cylinder></geometry>
-          <material>
-            <ambient>0.36 0.25 0.16 1</ambient>
-            <diffuse>0.36 0.25 0.16 1</diffuse>
-            <specular>0 0 0 1</specular>
-          </material>
-        </visual>
-      </link>
-    </model>
-    <model name='pole_9'>
-      <static>true</static>
-      <pose>21.9456 9.1440 3.0480 0 0 0</pose>
-      <link name='link'>
-        <collision name='collision'>
-          <geometry><cylinder><radius>0.15</radius><length>6.0960</length></cylinder></geometry>
-        </collision>
-        <visual name='visual'>
-          <geometry><cylinder><radius>0.15</radius><length>6.0960</length></cylinder></geometry>
-          <material>
-            <ambient>0.36 0.25 0.16 1</ambient>
-            <diffuse>0.36 0.25 0.16 1</diffuse>
-            <specular>0 0 0 1</specular>
-          </material>
-        </visual>
-      </link>
-    </model>
-    <model name='pole_10'>
       <static>true</static>
       <pose>36.5760 -9.1440 3.0480 0 0 0</pose>
       <link name='link'>
@@ -466,7 +298,7 @@
         </visual>
       </link>
     </model>
-    <model name='pole_11'>
+    <model name='pole_1'>
       <static>true</static>
       <pose>36.5760 9.1440 3.0480 0 0 0</pose>
       <link name='link'>
@@ -483,15 +315,151 @@
         </visual>
       </link>
     </model>
-    <model name='net_west_0_main'>
+    <model name='pole_2'>
       <static>true</static>
-      <pose>-28.3464 -9.1440 3.0480 0 0 1.570796</pose>
+      <pose>18.2880 -9.1440 3.0480 0 0 0</pose>
       <link name='link'>
         <collision name='collision'>
-          <geometry><box><size>0.0200 12.8016 6.0960</size></box></geometry>
+          <geometry><cylinder><radius>0.15</radius><length>6.0960</length></cylinder></geometry>
         </collision>
         <visual name='visual'>
-          <geometry><box><size>0.0200 12.8016 6.0960</size></box></geometry>
+          <geometry><cylinder><radius>0.15</radius><length>6.0960</length></cylinder></geometry>
+          <material>
+            <ambient>0.36 0.25 0.16 1</ambient>
+            <diffuse>0.36 0.25 0.16 1</diffuse>
+            <specular>0 0 0 1</specular>
+          </material>
+        </visual>
+      </link>
+    </model>
+    <model name='pole_3'>
+      <static>true</static>
+      <pose>18.2880 9.1440 3.0480 0 0 0</pose>
+      <link name='link'>
+        <collision name='collision'>
+          <geometry><cylinder><radius>0.15</radius><length>6.0960</length></cylinder></geometry>
+        </collision>
+        <visual name='visual'>
+          <geometry><cylinder><radius>0.15</radius><length>6.0960</length></cylinder></geometry>
+          <material>
+            <ambient>0.36 0.25 0.16 1</ambient>
+            <diffuse>0.36 0.25 0.16 1</diffuse>
+            <specular>0 0 0 1</specular>
+          </material>
+        </visual>
+      </link>
+    </model>
+    <model name='pole_4'>
+      <static>true</static>
+      <pose>0.0000 -9.1440 3.0480 0 0 0</pose>
+      <link name='link'>
+        <collision name='collision'>
+          <geometry><cylinder><radius>0.15</radius><length>6.0960</length></cylinder></geometry>
+        </collision>
+        <visual name='visual'>
+          <geometry><cylinder><radius>0.15</radius><length>6.0960</length></cylinder></geometry>
+          <material>
+            <ambient>0.36 0.25 0.16 1</ambient>
+            <diffuse>0.36 0.25 0.16 1</diffuse>
+            <specular>0 0 0 1</specular>
+          </material>
+        </visual>
+      </link>
+    </model>
+    <model name='pole_5'>
+      <static>true</static>
+      <pose>0.0000 9.1440 3.0480 0 0 0</pose>
+      <link name='link'>
+        <collision name='collision'>
+          <geometry><cylinder><radius>0.15</radius><length>6.0960</length></cylinder></geometry>
+        </collision>
+        <visual name='visual'>
+          <geometry><cylinder><radius>0.15</radius><length>6.0960</length></cylinder></geometry>
+          <material>
+            <ambient>0.36 0.25 0.16 1</ambient>
+            <diffuse>0.36 0.25 0.16 1</diffuse>
+            <specular>0 0 0 1</specular>
+          </material>
+        </visual>
+      </link>
+    </model>
+    <model name='pole_6'>
+      <static>true</static>
+      <pose>-18.2880 -9.1440 3.0480 0 0 0</pose>
+      <link name='link'>
+        <collision name='collision'>
+          <geometry><cylinder><radius>0.15</radius><length>6.0960</length></cylinder></geometry>
+        </collision>
+        <visual name='visual'>
+          <geometry><cylinder><radius>0.15</radius><length>6.0960</length></cylinder></geometry>
+          <material>
+            <ambient>0.36 0.25 0.16 1</ambient>
+            <diffuse>0.36 0.25 0.16 1</diffuse>
+            <specular>0 0 0 1</specular>
+          </material>
+        </visual>
+      </link>
+    </model>
+    <model name='pole_7'>
+      <static>true</static>
+      <pose>-18.2880 9.1440 3.0480 0 0 0</pose>
+      <link name='link'>
+        <collision name='collision'>
+          <geometry><cylinder><radius>0.15</radius><length>6.0960</length></cylinder></geometry>
+        </collision>
+        <visual name='visual'>
+          <geometry><cylinder><radius>0.15</radius><length>6.0960</length></cylinder></geometry>
+          <material>
+            <ambient>0.36 0.25 0.16 1</ambient>
+            <diffuse>0.36 0.25 0.16 1</diffuse>
+            <specular>0 0 0 1</specular>
+          </material>
+        </visual>
+      </link>
+    </model>
+    <model name='pole_8'>
+      <static>true</static>
+      <pose>-36.5760 -9.1440 3.0480 0 0 0</pose>
+      <link name='link'>
+        <collision name='collision'>
+          <geometry><cylinder><radius>0.15</radius><length>6.0960</length></cylinder></geometry>
+        </collision>
+        <visual name='visual'>
+          <geometry><cylinder><radius>0.15</radius><length>6.0960</length></cylinder></geometry>
+          <material>
+            <ambient>0.36 0.25 0.16 1</ambient>
+            <diffuse>0.36 0.25 0.16 1</diffuse>
+            <specular>0 0 0 1</specular>
+          </material>
+        </visual>
+      </link>
+    </model>
+    <model name='pole_9'>
+      <static>true</static>
+      <pose>-36.5760 9.1440 3.0480 0 0 0</pose>
+      <link name='link'>
+        <collision name='collision'>
+          <geometry><cylinder><radius>0.15</radius><length>6.0960</length></cylinder></geometry>
+        </collision>
+        <visual name='visual'>
+          <geometry><cylinder><radius>0.15</radius><length>6.0960</length></cylinder></geometry>
+          <material>
+            <ambient>0.36 0.25 0.16 1</ambient>
+            <diffuse>0.36 0.25 0.16 1</diffuse>
+            <specular>0 0 0 1</specular>
+          </material>
+        </visual>
+      </link>
+    </model>
+    <model name='net_west_0'>
+      <static>true</static>
+      <pose>27.4320 -9.1440 3.0480 0 0 1.570796</pose>
+      <link name='link'>
+        <collision name='collision'>
+          <geometry><box><size>0.0200 18.2880 6.0960</size></box></geometry>
+        </collision>
+        <visual name='visual'>
+          <geometry><box><size>0.0200 18.2880 6.0960</size></box></geometry>
           <material>
             <ambient>0.85 0.85 0.85 1</ambient>
             <diffuse>0.85 0.85 0.85 1</diffuse>
@@ -501,7 +469,61 @@
         </visual>
       </link>
     </model>
-    <model name='net_west_0_header'>
+    <model name='net_west_1'>
+      <static>true</static>
+      <pose>9.1440 -9.1440 3.0480 0 0 1.570796</pose>
+      <link name='link'>
+        <collision name='collision'>
+          <geometry><box><size>0.0200 18.2880 6.0960</size></box></geometry>
+        </collision>
+        <visual name='visual'>
+          <geometry><box><size>0.0200 18.2880 6.0960</size></box></geometry>
+          <material>
+            <ambient>0.85 0.85 0.85 1</ambient>
+            <diffuse>0.85 0.85 0.85 1</diffuse>
+            <specular>0 0 0 1</specular>
+          </material>
+          <transparency>0.65</transparency>
+        </visual>
+      </link>
+    </model>
+    <model name='net_west_2'>
+      <static>true</static>
+      <pose>-9.1440 -9.1440 3.0480 0 0 1.570796</pose>
+      <link name='link'>
+        <collision name='collision'>
+          <geometry><box><size>0.0200 18.2880 6.0960</size></box></geometry>
+        </collision>
+        <visual name='visual'>
+          <geometry><box><size>0.0200 18.2880 6.0960</size></box></geometry>
+          <material>
+            <ambient>0.85 0.85 0.85 1</ambient>
+            <diffuse>0.85 0.85 0.85 1</diffuse>
+            <specular>0 0 0 1</specular>
+          </material>
+          <transparency>0.65</transparency>
+        </visual>
+      </link>
+    </model>
+    <model name='net_west_3_main'>
+      <static>true</static>
+      <pose>-26.5176 -9.1440 3.0480 0 0 1.570796</pose>
+      <link name='link'>
+        <collision name='collision'>
+          <geometry><box><size>0.0200 16.4592 6.0960</size></box></geometry>
+        </collision>
+        <visual name='visual'>
+          <geometry><box><size>0.0200 16.4592 6.0960</size></box></geometry>
+          <material>
+            <ambient>0.85 0.85 0.85 1</ambient>
+            <diffuse>0.85 0.85 0.85 1</diffuse>
+            <specular>0 0 0 1</specular>
+          </material>
+          <transparency>0.65</transparency>
+        </visual>
+      </link>
+    </model>
+    <model name='net_west_3_header'>
       <static>true</static>
       <pose>-35.6616 -9.1440 3.9624 0 0 1.570796</pose>
       <link name='link'>
@@ -519,87 +541,15 @@
         </visual>
       </link>
     </model>
-    <model name='net_west_1'>
-      <static>true</static>
-      <pose>-14.6304 -9.1440 3.0480 0 0 1.570796</pose>
-      <link name='link'>
-        <collision name='collision'>
-          <geometry><box><size>0.0200 14.6304 6.0960</size></box></geometry>
-        </collision>
-        <visual name='visual'>
-          <geometry><box><size>0.0200 14.6304 6.0960</size></box></geometry>
-          <material>
-            <ambient>0.85 0.85 0.85 1</ambient>
-            <diffuse>0.85 0.85 0.85 1</diffuse>
-            <specular>0 0 0 1</specular>
-          </material>
-          <transparency>0.65</transparency>
-        </visual>
-      </link>
-    </model>
-    <model name='net_west_2'>
-      <static>true</static>
-      <pose>-0.0000 -9.1440 3.0480 0 0 1.570796</pose>
-      <link name='link'>
-        <collision name='collision'>
-          <geometry><box><size>0.0200 14.6304 6.0960</size></box></geometry>
-        </collision>
-        <visual name='visual'>
-          <geometry><box><size>0.0200 14.6304 6.0960</size></box></geometry>
-          <material>
-            <ambient>0.85 0.85 0.85 1</ambient>
-            <diffuse>0.85 0.85 0.85 1</diffuse>
-            <specular>0 0 0 1</specular>
-          </material>
-          <transparency>0.65</transparency>
-        </visual>
-      </link>
-    </model>
-    <model name='net_west_3'>
-      <static>true</static>
-      <pose>14.6304 -9.1440 3.0480 0 0 1.570796</pose>
-      <link name='link'>
-        <collision name='collision'>
-          <geometry><box><size>0.0200 14.6304 6.0960</size></box></geometry>
-        </collision>
-        <visual name='visual'>
-          <geometry><box><size>0.0200 14.6304 6.0960</size></box></geometry>
-          <material>
-            <ambient>0.85 0.85 0.85 1</ambient>
-            <diffuse>0.85 0.85 0.85 1</diffuse>
-            <specular>0 0 0 1</specular>
-          </material>
-          <transparency>0.65</transparency>
-        </visual>
-      </link>
-    </model>
-    <model name='net_west_4'>
-      <static>true</static>
-      <pose>29.2608 -9.1440 3.0480 0 0 1.570796</pose>
-      <link name='link'>
-        <collision name='collision'>
-          <geometry><box><size>0.0200 14.6304 6.0960</size></box></geometry>
-        </collision>
-        <visual name='visual'>
-          <geometry><box><size>0.0200 14.6304 6.0960</size></box></geometry>
-          <material>
-            <ambient>0.85 0.85 0.85 1</ambient>
-            <diffuse>0.85 0.85 0.85 1</diffuse>
-            <specular>0 0 0 1</specular>
-          </material>
-          <transparency>0.65</transparency>
-        </visual>
-      </link>
-    </model>
     <model name='net_east_0'>
       <static>true</static>
-      <pose>-29.2608 9.1440 3.0480 0 0 1.570796</pose>
+      <pose>27.4320 9.1440 3.0480 0 0 1.570796</pose>
       <link name='link'>
         <collision name='collision'>
-          <geometry><box><size>0.0200 14.6304 6.0960</size></box></geometry>
+          <geometry><box><size>0.0200 18.2880 6.0960</size></box></geometry>
         </collision>
         <visual name='visual'>
-          <geometry><box><size>0.0200 14.6304 6.0960</size></box></geometry>
+          <geometry><box><size>0.0200 18.2880 6.0960</size></box></geometry>
           <material>
             <ambient>0.85 0.85 0.85 1</ambient>
             <diffuse>0.85 0.85 0.85 1</diffuse>
@@ -611,13 +561,13 @@
     </model>
     <model name='net_east_1'>
       <static>true</static>
-      <pose>-14.6304 9.1440 3.0480 0 0 1.570796</pose>
+      <pose>9.1440 9.1440 3.0480 0 0 1.570796</pose>
       <link name='link'>
         <collision name='collision'>
-          <geometry><box><size>0.0200 14.6304 6.0960</size></box></geometry>
+          <geometry><box><size>0.0200 18.2880 6.0960</size></box></geometry>
         </collision>
         <visual name='visual'>
-          <geometry><box><size>0.0200 14.6304 6.0960</size></box></geometry>
+          <geometry><box><size>0.0200 18.2880 6.0960</size></box></geometry>
           <material>
             <ambient>0.85 0.85 0.85 1</ambient>
             <diffuse>0.85 0.85 0.85 1</diffuse>
@@ -629,13 +579,13 @@
     </model>
     <model name='net_east_2'>
       <static>true</static>
-      <pose>-0.0000 9.1440 3.0480 0 0 1.570796</pose>
+      <pose>-9.1440 9.1440 3.0480 0 0 1.570796</pose>
       <link name='link'>
         <collision name='collision'>
-          <geometry><box><size>0.0200 14.6304 6.0960</size></box></geometry>
+          <geometry><box><size>0.0200 18.2880 6.0960</size></box></geometry>
         </collision>
         <visual name='visual'>
-          <geometry><box><size>0.0200 14.6304 6.0960</size></box></geometry>
+          <geometry><box><size>0.0200 18.2880 6.0960</size></box></geometry>
           <material>
             <ambient>0.85 0.85 0.85 1</ambient>
             <diffuse>0.85 0.85 0.85 1</diffuse>
@@ -647,31 +597,13 @@
     </model>
     <model name='net_east_3'>
       <static>true</static>
-      <pose>14.6304 9.1440 3.0480 0 0 1.570796</pose>
+      <pose>-27.4320 9.1440 3.0480 0 0 1.570796</pose>
       <link name='link'>
         <collision name='collision'>
-          <geometry><box><size>0.0200 14.6304 6.0960</size></box></geometry>
+          <geometry><box><size>0.0200 18.2880 6.0960</size></box></geometry>
         </collision>
         <visual name='visual'>
-          <geometry><box><size>0.0200 14.6304 6.0960</size></box></geometry>
-          <material>
-            <ambient>0.85 0.85 0.85 1</ambient>
-            <diffuse>0.85 0.85 0.85 1</diffuse>
-            <specular>0 0 0 1</specular>
-          </material>
-          <transparency>0.65</transparency>
-        </visual>
-      </link>
-    </model>
-    <model name='net_east_4'>
-      <static>true</static>
-      <pose>29.2608 9.1440 3.0480 0 0 1.570796</pose>
-      <link name='link'>
-        <collision name='collision'>
-          <geometry><box><size>0.0200 14.6304 6.0960</size></box></geometry>
-        </collision>
-        <visual name='visual'>
-          <geometry><box><size>0.0200 14.6304 6.0960</size></box></geometry>
+          <geometry><box><size>0.0200 18.2880 6.0960</size></box></geometry>
           <material>
             <ambient>0.85 0.85 0.85 1</ambient>
             <diffuse>0.85 0.85 0.85 1</diffuse>
@@ -783,8 +715,8 @@
     <spherical_coordinates>
       <surface_model>EARTH_WGS84</surface_model>
       <world_frame_orientation>ENU</world_frame_orientation>
-      <latitude_deg>29.628147</latitude_deg>
-      <longitude_deg>-82.360333</longitude_deg>
+      <latitude_deg>29.628164</latitude_deg>
+      <longitude_deg>-82.360346</longitude_deg>
       <elevation>0.0</elevation>
       <heading_deg>-34.5031</heading_deg>
     </spherical_coordinates>

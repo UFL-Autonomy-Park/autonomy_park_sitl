@@ -62,8 +62,13 @@ copy_contents() {
 # --- PX4 SITL configuration ------------------------------------------------
 
 # PX4 SITL home position (middle of the Autonomy Park)
-export PX4_HOME_LAT=29.628164
-export PX4_HOME_LON=-82.360346
+# export PX4_HOME_LAT=29.628164
+# export PX4_HOME_LON=-82.360346
+export PX4_HOME_LAT=29.628147
+export PX4_HOME_LON=-82.360333
+# Test next:
+# export PX4_HOME_LAT=29.6281509
+# export PX4_HOME_LON=-82.3603286
 export PX4_HOME_ALT=30.0
 
 # Custom Gazebo world/model, added via px4-additions/ (see write_px4_with_px4_additions.sh)
