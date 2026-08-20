@@ -11,3 +11,5 @@ px4-additions/models/homebrew_base/meshes/base_link.stl filter=lfs diff=lfs merg
 px4-additions/models/homebrew_base/meshes/motor_ccw.stl filter=lfs diff=lfs merge=lfs -text
 px4-additions/models/homebrew_base/meshes/motor_cw.stl filter=lfs diff=lfs merge=lfs -text
 px4-additions/worlds/materials/textures/hill_heightmap_old.png filter=lfs diff=lfs merge=lfs -text
+px4-additions/worlds/materials/textures/sparse_ground_foliage_reflection_map.png filter=lfs diff=lfs merge=lfs -text
+px4-additions/worlds/materials/textures/sparse_ground_foliage_texture.jpg filter=lfs diff=lfs merge=lfs -text

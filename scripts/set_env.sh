@@ -69,7 +69,7 @@ export PX4_HOME_LON=-82.360333
 # Test next:
 # export PX4_HOME_LAT=29.6281509
 # export PX4_HOME_LON=-82.3603286
-export PX4_HOME_ALT=30.0
+export PX4_HOME_ALT=0.0
 
 # Custom Gazebo world/model, added via px4-additions/ (see write_px4_with_px4_additions.sh)
 export PX4_GZ_WORLD=autonomy_park
@@ -78,8 +78,8 @@ export PX4_SIM_MODEL=gz_homebrew
 export PX4_SYS_AUTOSTART=4025
 # export PX4_GZ_MODEL_POSE="0.0,-9.0,0.05,0,0,0"
 #export PX4_GZ_MODEL_POSE="16.0,0.0,0.05,0,0,0"
-export PX4_GZ_MODEL_POSE="0.0,0.0,0.0,0,0,0"
-#export PX4_GZ_MODEL_POSE="3.0,0,0.05,0,0,0"
+#export PX4_GZ_MODEL_POSE="0,0,0.05,0,0,0"
+export PX4_GZ_MODEL_POSE="3.0,0,0.5,0,0,0"
 
 # PX4's `make` target for this world/model combo (see rebuild_px4.sh)
 export PX4_MAKE_TARGET="px4_sitl gz_homebrew_autonomy_park"

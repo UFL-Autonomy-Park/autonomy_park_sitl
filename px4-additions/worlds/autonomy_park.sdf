@@ -74,10 +74,14 @@
     </gui>
     <!-- Environmental Parameters -->
     <gravity>0 0 -9.8</gravity>
-    <magnetic_field>-2.704700e-06 2.403450e-05 -3.845770e-05</magnetic_field>
+    <magnetic_field>6e-06 2.3e-05 -4.2e-05</magnetic_field>
+    <!-- Real data from NOAA data (https://www.ngdc.noaa.gov/geomag/calculators/magcalc.shtml#igrfwmm) with WMMHR 2024-2029 data for 8/20/2026 for the coordinates the end of this file is:
+    -2.704700e-06 2.403450e-05 -3.845770e-05.
+    However, this causes heading drit and EKF issues.
+    Compare to defaults of 6e-06 2.3e-05 -4.2e-05-->
     <atmosphere type="adiabatic"/>
     <scene>
-      <grid>true</grid>
+      <grid>false</grid>
       <ambient>0.35 0.35 0.35 1</ambient>
       <background>0.7 0.85 0.95 1</background>
       <shadows>true</shadows>
@@ -199,14 +203,13 @@
       <pose>0 0 0 0 -0 0</pose>
       <self_collide>false</self_collide>
     </model>
-<!--    
     <model name='hill'>
       <static>true</static>
       <pose>0 0 0 0 0 0</pose>
       <link name='link'>
         <collision name='collision'>
           <pose>-8.288 3.644 0 0 0 0</pose>
-          <geometry><mesh><uri>meshes/hill_frustum_collision.obj</uri><scale>1 1 1</scale></mesh></geometry>
+          <geometry><mesh><uri>meshes/hill_collision_box.obj</uri><scale>1 1 1</scale></mesh></geometry>
         </collision>
         <visual name='visual'>
           <geometry>
@@ -215,8 +218,8 @@
               <size>20.0 13.0 1.0</size>
               <pos>-8.288 3.644 0.001</pos>
               <texture>
-                <diffuse>materials/textures/brown_mud_leaves_01_diff_4k.jpg</diffuse>
-                <normal>materials/textures/brown_mud_leaves_01_normal_35pct.png</normal>
+                <diffuse>materials/textures/sparse_ground_foliage_texture.jpg</diffuse>
+                <normal>materials/textures/sparse_ground_foliage_reflection_map.png</normal>
                 <size>2.0</size>
               </texture>
             </heightmap>
@@ -234,8 +237,7 @@
           </material>
         </visual>
       </link>
-    </model>
- -->   
+    </model> 
     <model name='ground_grass_visual'>
       <static>true</static>
       <pose>0 0 0 0 0 0</pose>
@@ -247,8 +249,8 @@
               <size>120 80 0.001</size>
               <pos>-2.2860 0.0000 0.0005</pos>
               <texture>
-                <diffuse>materials/textures/brown_mud_leaves_01_diff_4k.jpg</diffuse>
-                <normal>materials/textures/brown_mud_leaves_01_normal_35pct.png</normal>
+                <diffuse>materials/textures/sparse_ground_foliage_texture.jpg</diffuse>
+                <normal>materials/textures/sparse_ground_foliage_reflection_map.png</normal>
                 <size>2.0000</size>
               </texture>
             </heightmap>
@@ -779,7 +781,7 @@
       <pose>41.576 -6.144 0 0 0 0</pose>
     </include>
     </model> <!-- end trees -->
-    <!-- Don't touch this unless you know what you're doing and have talked to me-->
+    <!-- Don't touch this unless you know what you're doing and have talked to Max Gardenswartz!-->
     <spherical_coordinates>
       <surface_model>EARTH_WGS84</surface_model>
       <world_frame_orientation>ENU</world_frame_orientation>
