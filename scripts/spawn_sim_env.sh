@@ -10,6 +10,11 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "$SCRIPT_DIR/set_env.sh"
 
+require_dir "$PX4_DIR/build/px4_sitl_default" "Error: no PX4 SITL build found. Run scripts/rebuild_px4.sh first."
+
+echo "[*] Killing any leftover Gazebo/PX4 processes..."
+"$SCRIPT_DIR/kill_gz.sh"
+
 READY_STRING="Ready for takeoff!"
 
 launch_px4() {
@@ -21,6 +26,12 @@ launch_px4() {
 
     echo "[*] Launching PX4 instance $instance (model=$model, autostart=$autostart)..."
 
+    # -d disables px4's interactive "pxh>" shell. Without it, px4's getchar()
+    # read loop never blocks once stdin isn't a real controlling terminal (as
+    # here, backgrounded from a script) - it spins re-printing the prompt as
+    # fast as the CPU allows, pegging a core and growing $logfile without
+    # bound instead of settling down after startup.
+
     PX4_HOME_LAT="$PX4_HOME_LAT" \
     PX4_HOME_LON="$PX4_HOME_LON" \
     PX4_HOME_ALT="$PX4_HOME_ALT" \
@@ -28,7 +39,7 @@ launch_px4() {
     PX4_SYS_AUTOSTART="$autostart" \
     PX4_SIM_MODEL="$model" \
     PX4_GZ_MODEL_POSE="$pose" \
-    "$PX4_DIR/build/px4_sitl_default/bin/px4" -i "$instance" > "$logfile" 2>&1 &
+    "$PX4_DIR/build/px4_sitl_default/bin/px4" -i "$instance" -d < /dev/null > "$logfile" 2>&1 &
 
     echo "PID: $!"
 }
@@ -62,4 +73,4 @@ launch_px4 0 "$PX4_SYS_AUTOSTART" "$PX4_SIM_MODEL" "0,20"
 wait_for_ready 0
 
 echo "[+] Gazebo simulation is ready!"
-wait # Keep script alive so background processes don't get killed
+wait # Keep script alive so Ctrl-C reaches the backgrounded px4 process

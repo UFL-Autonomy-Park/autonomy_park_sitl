@@ -32,12 +32,12 @@
         <geometry>
           <mesh>
             <scale>1 1 1</scale>
-            <uri>model://homebrew_base/meshes/base_link.STL</uri>
+            <uri>model://homebrew_base/meshes/base_link.stl</uri>
           </mesh>
         </geometry>
       </visual>
 
-      <!-- Collision proxy measured directly from base_link.STL's own triangles (583k tris - far too dense to
+      <!-- Collision proxy measured directly from base_link.stl's own triangles (583k tris - far too dense to
            collide directly), not scaled/guessed from x500. Main plate + battery hump match the mesh's bounding
            envelope at those heights. The two landing rails are fattened to swallow their actual inverted-T taper
            (wide foot narrowing to a thin web) into one solid box each, since a thin web modeled faithfully is
@@ -53,7 +53,11 @@
           <contact>
             <ode>
               <min_depth>0.001</min_depth>
-              <max_vel>0</max_vel>
+              <!-- max_vel caps the contact push-out correction speed; 0 disables
+                   push-out correction entirely, letting sustained downward load
+                   (e.g. rotor thrust against a sloped surface) sink in without
+                   ever being corrected back out. Use the engine's default. -->
+              <max_vel>100</max_vel>
             </ode>
           </contact>
           <friction>
@@ -72,7 +76,11 @@
           <contact>
             <ode>
               <min_depth>0.001</min_depth>
-              <max_vel>0</max_vel>
+              <!-- max_vel caps the contact push-out correction speed; 0 disables
+                   push-out correction entirely, letting sustained downward load
+                   (e.g. rotor thrust against a sloped surface) sink in without
+                   ever being corrected back out. Use the engine's default. -->
+              <max_vel>100</max_vel>
             </ode>
           </contact>
           <friction>
@@ -91,7 +99,11 @@
           <contact>
             <ode>
               <min_depth>0.001</min_depth>
-              <max_vel>0</max_vel>
+              <!-- max_vel caps the contact push-out correction speed; 0 disables
+                   push-out correction entirely, letting sustained downward load
+                   (e.g. rotor thrust against a sloped surface) sink in without
+                   ever being corrected back out. Use the engine's default. -->
+              <max_vel>100</max_vel>
             </ode>
           </contact>
           <friction>
@@ -110,7 +122,11 @@
           <contact>
             <ode>
               <min_depth>0.001</min_depth>
-              <max_vel>0</max_vel>
+              <!-- max_vel caps the contact push-out correction speed; 0 disables
+                   push-out correction entirely, letting sustained downward load
+                   (e.g. rotor thrust against a sloped surface) sink in without
+                   ever being corrected back out. Use the engine's default. -->
+              <max_vel>100</max_vel>
             </ode>
           </contact>
           <friction>
@@ -236,7 +252,7 @@
         <geometry>
           <mesh>
             <scale>1 1 1</scale>
-            <uri>model://homebrew_base/meshes/Motor_ccw.STL</uri>
+            <uri>model://homebrew_base/meshes/motor_ccw.stl</uri>
           </mesh>
         </geometry>
       </visual>
@@ -244,7 +260,7 @@
         <pose>0 0 0 0 0 0 </pose>
         <geometry>
           <box>
-            <!-- Measured from Motor_ccw.STL's own bounding box (blade axis along local X) -->
+            <!-- Measured from motor_ccw.stl's own bounding box (blade axis along local X) -->
             <size>0.386 0.0511 0.0471</size>
           </box>
         </geometry>
@@ -252,7 +268,11 @@
           <contact>
             <ode>
               <min_depth>0.001</min_depth>
-              <max_vel>0</max_vel>
+              <!-- max_vel caps the contact push-out correction speed; 0 disables
+                   push-out correction entirely, letting sustained downward load
+                   (e.g. rotor thrust against a sloped surface) sink in without
+                   ever being corrected back out. Use the engine's default. -->
+              <max_vel>100</max_vel>
             </ode>
           </contact>
           <friction>
@@ -301,7 +321,7 @@
         <geometry>
           <mesh>
             <scale>1 1 1</scale>
-            <uri>model://homebrew_base/meshes/Motor_ccw.STL</uri>
+            <uri>model://homebrew_base/meshes/motor_ccw.stl</uri>
           </mesh>
         </geometry>
       </visual>
@@ -309,7 +329,7 @@
         <pose>0 0 0 0 0 0 </pose>
         <geometry>
           <box>
-            <!-- Measured from Motor_ccw.STL's own bounding box (blade axis along local X) -->
+            <!-- Measured from motor_ccw.stl's own bounding box (blade axis along local X) -->
             <size>0.386 0.0511 0.0471</size>
           </box>
         </geometry>
@@ -317,7 +337,11 @@
           <contact>
             <ode>
               <min_depth>0.001</min_depth>
-              <max_vel>0</max_vel>
+              <!-- max_vel caps the contact push-out correction speed; 0 disables
+                   push-out correction entirely, letting sustained downward load
+                   (e.g. rotor thrust against a sloped surface) sink in without
+                   ever being corrected back out. Use the engine's default. -->
+              <max_vel>100</max_vel>
             </ode>
           </contact>
           <friction>
@@ -366,7 +390,7 @@
         <geometry>
           <mesh>
             <scale>1 1 1</scale>
-            <uri>model://homebrew_base/meshes/Motor_cw.STL</uri>
+            <uri>model://homebrew_base/meshes/motor_cw.stl</uri>
           </mesh>
         </geometry>
       </visual>
@@ -374,7 +398,7 @@
         <pose>0 0 0 0 0 0 </pose>
         <geometry>
           <box>
-            <!-- Measured from Motor_cw.STL's own bounding box (blade axis along local Y, unlike the ccw mesh) -->
+            <!-- Measured from motor_cw.stl's own bounding box (blade axis along local Y, unlike the ccw mesh) -->
             <size>0.1367 0.3646 0.0471</size>
           </box>
         </geometry>
@@ -382,7 +406,11 @@
           <contact>
             <ode>
               <min_depth>0.001</min_depth>
-              <max_vel>0</max_vel>
+              <!-- max_vel caps the contact push-out correction speed; 0 disables
+                   push-out correction entirely, letting sustained downward load
+                   (e.g. rotor thrust against a sloped surface) sink in without
+                   ever being corrected back out. Use the engine's default. -->
+              <max_vel>100</max_vel>
             </ode>
           </contact>
           <friction>
@@ -431,7 +459,7 @@
         <geometry>
           <mesh>
             <scale>1 1 1</scale>
-            <uri>model://homebrew_base/meshes/Motor_cw.STL</uri>
+            <uri>model://homebrew_base/meshes/motor_cw.stl</uri>
           </mesh>
         </geometry>
       </visual>
@@ -439,7 +467,7 @@
         <pose>0 0 0 0 0 0 </pose>
         <geometry>
           <box>
-            <!-- Measured from Motor_cw.STL's own bounding box (blade axis along local Y, unlike the ccw mesh) -->
+            <!-- Measured from motor_cw.stl's own bounding box (blade axis along local Y, unlike the ccw mesh) -->
             <size>0.1367 0.3646 0.0471</size>
           </box>
         </geometry>
@@ -447,7 +475,11 @@
           <contact>
             <ode>
               <min_depth>0.001</min_depth>
-              <max_vel>0</max_vel>
+              <!-- max_vel caps the contact push-out correction speed; 0 disables
+                   push-out correction entirely, letting sustained downward load
+                   (e.g. rotor thrust against a sloped surface) sink in without
+                   ever being corrected back out. Use the engine's default. -->
+              <max_vel>100</max_vel>
             </ode>
           </contact>
           <friction>

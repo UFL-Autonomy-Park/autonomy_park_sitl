@@ -7,14 +7,16 @@
 
 . ${R}etc/init.d/rc.mc_defaults
 
-PX4_SIMULATOR=${PX4_SIMULATOR:=gz}
-PX4_GZ_WORLD=${PX4_GZ_WORLD:=default}
-PX4_SIM_MODEL=${PX4_SIM_MODEL:=homebrew}   # must match model directory name
+PX4_SIMULATOR=${PX4_SIMULATOR:=gz} # should already be set elsewhere (i.e., from a launch script)
+PX4_GZ_WORLD=${PX4_GZ_WORLD:=autonomy_park} # overwritten if build with "make px4_sitl gz_homebrew_autonomy_park"; set to "default" and build with "make px4_sitl gz_homebrew" if you want an empty world
+PX4_SIM_MODEL=${PX4_SIM_MODEL:=homebrew} # should already be set elsewhere (i.e., from a launch script)
+PX4_GZ_MODEL_POSE=${PX4_GZ_MODEL_POSE:="-20,0,0.05,0,0,0"} # so we don't spawn in a hill
+# note: origin is at middle of park on the floor, +x points away from shed, +y points toward SW 23rd Terrace, and z is up (i.e., a local ENU frame)
 
-param set-default SIM_GZ_EN 1
+param set-default SIM_GZ_EN 1 # sim mode (disable by settings to 0 if this were real world!)
 
 param set-default SENS_EN_GPSSIM 1
-param set-default SENS_EN_BAROSIM 0
+param set-default SENS_EN_BAROSIM 0 # we do not fuse barometer in the EKF2 at the Park (poor quality) and the quad will launch upward into the net if clouds roll in
 param set-default SENS_EN_MAGSIM 1
 
 # ── Control Allocation ──────────────────────────────────────────────────────
@@ -24,6 +26,7 @@ param set-default CA_ROTOR_COUNT 4
 # Motor positions (metres from CoM) and yaw torque sign
 # KM < 0 = CCW spin (negative yaw torque)
 # KM > 0 = CW  spin (positive yaw torque)
+# Measured by Mingyuan Gao from a real-world quad in August 2026
 
 param set-default CA_ROTOR0_PX  0.2418  
 param set-default CA_ROTOR0_PY  0.2446
@@ -57,9 +60,8 @@ param set-default SIM_GZ_EC_MAX2 1000
 param set-default SIM_GZ_EC_MAX3 1000
 param set-default SIM_GZ_EC_MAX4 1000
 
-# ── Flight Controller Defaults ──────────────────────────────────────────────
-param set-default MPC_THR_HOVER 0.60   # hover throttle (tune after first flight)
-param set-default NAV_DLL_ACT 2
-
-# Needed to prevent time sync errors in Micro-XCRE-DDS in simulation (turn on for real world)
-param set-default UXRCE_DDS_SYNCT 0
+# ── Other Stuff ──────────────────────────────────────────────
+param set-default MPC_THR_HOVER 0.60   # hover throttle (left default; never tuned; manufacturers usually provide this but our quadcopters are custom)
+param set-default COM_OBL_RC_ACT 5
+param set-default UXRCE_DDS_SYNCT 0 # Needed to prevent time sync errors in Micro-XCRE-DDS in simulation (turn on for real world)
+param set-default NAV_DLL_ACT 0 # Disbable need for QGC in SITL; otherwise PX4 will never be ready if you don't run QGC first

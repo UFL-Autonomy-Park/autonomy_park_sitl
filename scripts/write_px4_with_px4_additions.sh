@@ -8,38 +8,13 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "$SCRIPT_DIR/set_env.sh"
 
-# Validate paths
-if [[ ! -d "$PX4_ADDITIONS_DIR" ]]; then
-    echo "Error: source directory '$PX4_ADDITIONS_DIR' not found." >&2
-    exit 1
-fi
-
-if [[ ! -d "$PX4_DIR" ]]; then
-    echo "Error: PX4-Autopilot directory '$PX4_DIR' not found. Run scripts/init.sh first." >&2
-    exit 1
-fi
+require_dir "$PX4_ADDITIONS_DIR"
+require_dir "$PX4_DIR" "Error: PX4-Autopilot directory '$PX4_DIR' not found. Run scripts/init.sh first."
 
 echo "Project Root: $PROJECT_ROOT"
 echo "Copying additions from $PX4_ADDITIONS_DIR to $PX4_DIR..."
 
-# copy_contents SRC_DIR DEST_DIR - copies SRC_DIR's contents into DEST_DIR,
-# failing loudly if SRC_DIR is empty or DEST_DIR doesn't exist.
-copy_contents() {
-    local src="$1" dest="$2"
-    local entries=("$src"/*)
-
-    if [[ ! -d "$dest" ]]; then
-        echo "Error: destination directory '$dest' not found (unexpected PX4-Autopilot layout?)." >&2
-        exit 1
-    fi
-
-    if [[ ! -e "${entries[0]}" ]]; then
-        echo "Error: '$src' is empty, nothing to copy." >&2
-        exit 1
-    fi
-
-    cp -r "${entries[@]}" "$dest/"
-}
+# copy_contents() is defined in set_env.sh
 
 # 1. Gazebo simulation models -> PX4-Autopilot/Tools/simulation/gz/models/
 copy_contents "$PX4_ADDITIONS_DIR/models" "$PX4_DIR/Tools/simulation/gz/models"
