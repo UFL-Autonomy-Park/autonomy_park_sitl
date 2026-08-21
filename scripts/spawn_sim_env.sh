@@ -69,7 +69,7 @@ wait_for_ready() {
 
 cd "$PX4_DIR"
 
-launch_px4 0 "$PX4_SYS_AUTOSTART" "$PX4_SIM_MODEL" "0,20"
+launch_px4 0 "$PX4_SYS_AUTOSTART" "$PX4_SIM_MODEL" "$PX4_GZ_MODEL_POSE"
 wait_for_ready 0
 
 echo "[+] Gazebo simulation is ready!"

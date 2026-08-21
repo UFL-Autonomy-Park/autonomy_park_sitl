@@ -28,19 +28,19 @@ param set-default CA_ROTOR_COUNT 4
 # KM > 0 = CW  spin (positive yaw torque)
 # Measured by Mingyuan Gao from a real-world quad in August 2026
 
-param set-default CA_ROTOR0_PX  0.2418  
+param set-default CA_ROTOR0_PX  0.2418
 param set-default CA_ROTOR0_PY  0.2446
 param set-default CA_ROTOR0_KM 0.05
 
-param set-default CA_ROTOR1_PX  -0.2418 
+param set-default CA_ROTOR1_PX  -0.2418
 param set-default CA_ROTOR1_PY  -0.2446
 param set-default CA_ROTOR1_KM 0.05
 
-param set-default CA_ROTOR2_PX   0.2418   
+param set-default CA_ROTOR2_PX   0.2418
 param set-default CA_ROTOR2_PY  -0.2446
 param set-default CA_ROTOR2_KM  -0.05
 
-param set-default CA_ROTOR3_PX -0.2418  
+param set-default CA_ROTOR3_PX -0.2418
 param set-default CA_ROTOR3_PY  0.2446
 param set-default CA_ROTOR3_KM  -0.05
 
@@ -60,8 +60,26 @@ param set-default SIM_GZ_EC_MAX2 1000
 param set-default SIM_GZ_EC_MAX3 1000
 param set-default SIM_GZ_EC_MAX4 1000
 
-# ── Other Stuff ──────────────────────────────────────────────
-param set-default MPC_THR_HOVER 0.60   # hover throttle (left default; never tuned; manufacturers usually provide this but our quadcopters are custom)
-param set-default COM_OBL_RC_ACT 5
-param set-default UXRCE_DDS_SYNCT 0 # Needed to prevent time sync errors in Micro-XCRE-DDS in simulation (turn on for real world)
-param set-default NAV_DLL_ACT 0 # Disbable need for QGC in SITL; otherwise PX4 will never be ready if you don't run QGC first
+# ── SITL Workflow Convenience ───────────────────────────────────────────────
+param set-default UXRCE_DDS_SYNCT 0  # avoids time sync errors in Micro-XRCE-DDS under sim (turn on for real world)
+param set-default NAV_DLL_ACT 0      # disable need for QGC in SITL; otherwise PX4 never reaches "ready" without it
+# real Homebrew quad has NAV_DLL_ACT=3 (RTL on datalink loss); left at 0 here deliberately.
+
+# ── Height Estimation ───────────────────────────────────────────────────────
+# Range (downward LW20 lidar) as the primary height reference, matching the
+# real quad - GPS altitude and barometer are both unreliable at the Park.
+# Requires aero_common's px4_telemetry to publish an EKF global origin at
+# startup (gp_origin_publisher_); without it, AUTO_MISSION/AUTO_LOITER/AUTO_RTL
+# get rejected for invalid global position. See aero_common's git history for
+# the writeup on this.
+param set-default EKF2_HGT_REF 2
+
+# ── Real-World Parity (failsafes) ───────────────────────────────────────────
+param set-default COM_RC_IN_MODE 3   # real: RC+Joystick w/ fallback; also needed in SITL (no physical RC)
+param set-default COM_OBL_RC_ACT 4   # real: offboard-signal-loss failsafe -> Land (SITL default was Hold)
+param set-default COM_OF_LOSS_T 1.0  # real: offboard-signal-loss failsafe fires after 1s (PX4 default is 0.5s)
+param set-default GF_ACTION 5        # real: geofence breach action -> Land (PX4 default is Hold)
+param set-default NAV_RCL_ACT 3      # real: RC-loss failsafe -> Land (only relevant with a physical RC transmitter)
+
+# ── Misc ─────────────────────────────────────────────────────────────────────
+param set-default MPC_THR_HOVER 0.60 # hover throttle (left default; never tuned per-vehicle)
