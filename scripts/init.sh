@@ -37,7 +37,7 @@ echo "==> [3/4] Verifying PX4-Autopilot checkout..."
 echo "    PX4-Autopilot is ready at $(git -C "$PX4_DIR" describe --tags HEAD 2>/dev/null || git -C "$PX4_DIR" rev-parse --short HEAD)"
 
 echo "==> [4/4] Installing PX4's own SITL build dependencies..."
-"$PX4_DIR/Tools/setup/ubuntu.sh"
+sudo "$PX4_DIR/Tools/setup/ubuntu.sh"
 
 echo
 echo "Setup complete. Next: scripts/rebuild_px4.sh to build PX4 SITL."
