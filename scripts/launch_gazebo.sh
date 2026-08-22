@@ -1,14 +1,15 @@
 #!/usr/bin/env bash
 # Launches a PX4 SITL instance against the custom Gazebo world/model defined
-# in px4-additions/ (see write_px4_with_px4_additions.sh to sync them into
-# PX4-Autopilot first, and scripts/set_env.sh for the env vars used below).
+# in px4-additions/ (see library/write_px4_with_px4_additions.sh to sync them
+# into PX4-Autopilot first, and library/set_env.sh for the env vars used
+# below).
 #
 # To reset the EKF origin manually after launch:
 #   $PX4_DIR/build/px4_sitl_default/bin/px4-commander set_ekf_origin <lat> <lon> <alt>
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-source "$SCRIPT_DIR/set_env.sh"
+source "$SCRIPT_DIR/library/set_env.sh"
 
 require_dir "$PX4_DIR/build/px4_sitl_default" "Error: no PX4 SITL build found. Run scripts/build_px4.sh first."
 
@@ -21,7 +22,7 @@ export GZ_SIM_SYSTEM_PLUGIN_PATH="${GZ_SIM_SYSTEM_PLUGIN_PATH:-}"
 source "$PX4_DIR/build/px4_sitl_default/rootfs/gz_env.sh"
 
 echo "[*] Killing any leftover Gazebo/PX4 processes..."
-"$SCRIPT_DIR/kill_gz.sh"
+"$SCRIPT_DIR/library/kill_gazebo.sh"
 
 READY_STRING="Ready for takeoff!"
 
@@ -31,6 +32,7 @@ launch_px4() {
     local model=$3
     local pose=${4:-}
     local logfile="/tmp/px4_instance_${instance}.log"
+    local pidfile="/tmp/px4_instance_${instance}.pid"
 
     echo "[*] Launching PX4 instance $instance (model=$model, autostart=$autostart)..."
 
@@ -40,16 +42,34 @@ launch_px4() {
     # fast as the CPU allows, pegging a core and growing $logfile without
     # bound instead of settling down after startup.
 
-    PX4_HOME_LAT="$PX4_HOME_LAT" \
-    PX4_HOME_LON="$PX4_HOME_LON" \
-    PX4_HOME_ALT="$PX4_HOME_ALT" \
-    PX4_GZ_WORLD="$PX4_GZ_WORLD" \
-    PX4_SYS_AUTOSTART="$autostart" \
-    PX4_SIM_MODEL="$model" \
-    PX4_GZ_MODEL_POSE="$pose" \
-    "$PX4_DIR/build/px4_sitl_default/bin/px4" -i "$instance" -d < /dev/null > "$logfile" 2>&1 &
+    # setsid puts px4 (and the gz sim server/gui it spawns as direct
+    # children) in a new session/process group, so library/kill_gazebo.sh
+    # can kill exactly this tree via its PGID instead of pattern-matching
+    # process names system-wide. `$!` after `setsid cmd &` is unreliable -
+    # setsid forks internally and $! can end up pointing at an
+    # already-exited intermediate - so the pidfile is written from inside
+    # the process that actually execs into px4, guaranteeing it's correct.
+    rm -f "$pidfile"
+    setsid bash -c 'echo $$ > "$1"; shift; exec "$@"' _ "$pidfile" \
+        env PX4_HOME_LAT="$PX4_HOME_LAT" \
+            PX4_HOME_LON="$PX4_HOME_LON" \
+            PX4_HOME_ALT="$PX4_HOME_ALT" \
+            PX4_GZ_WORLD="$PX4_GZ_WORLD" \
+            PX4_SYS_AUTOSTART="$autostart" \
+            PX4_SIM_MODEL="$model" \
+            PX4_GZ_MODEL_POSE="$pose" \
+            "$PX4_DIR/build/px4_sitl_default/bin/px4" -i "$instance" -d \
+        < /dev/null > "$logfile" 2>&1 &
+    disown
 
-    echo "PID: $!"
+    # Wait for the pidfile write, not a fixed sleep - it lands within a
+    # syscall or two of setsid's fork, so this is normally instant.
+    for _ in $(seq 1 50); do
+        [[ -s "$pidfile" ]] && break
+        sleep 0.1
+    done
+
+    echo "PID: $(cat "$pidfile" 2>/dev/null || echo "unknown - check $pidfile")"
 }
 
 wait_for_ready() {
@@ -82,5 +102,16 @@ cd "$PX4_DIR/build/px4_sitl_default/rootfs"
 launch_px4 0 "$PX4_SYS_AUTOSTART" "$PX4_SIM_MODEL" "$PX4_GZ_MODEL_POSE"
 wait_for_ready 0
 
-echo "[+] Gazebo simulation is ready!"
-wait # Keep script alive so Ctrl-C reaches the backgrounded px4 process
+echo "[+] Gazebo simulation is ready! Ctrl-C to stop."
+
+# px4 runs in its own session (via setsid in launch_px4), so it's no longer
+# a child of this shell - Ctrl-C here won't reach it on its own, and a bare
+# `wait` would return immediately instead of blocking on it. Trap the
+# interrupt and clean up explicitly instead.
+trap '"$SCRIPT_DIR/library/kill_gazebo.sh"; exit 0' INT TERM
+
+while kill -0 "-$(cat /tmp/px4_instance_0.pid 2>/dev/null)" 2>/dev/null; do
+    sleep 1
+done
+echo "[!] PX4 instance 0 exited unexpectedly. Check /tmp/px4_instance_0.log" >&2
+exit 1

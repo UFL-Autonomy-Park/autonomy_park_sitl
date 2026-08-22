@@ -7,7 +7,7 @@ set -euo pipefail
 trap 'echo "ERROR: init.sh failed at line $LINENO: \"$BASH_COMMAND\"" >&2' ERR
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-source "$SCRIPT_DIR/set_env.sh"
+source "$SCRIPT_DIR/library/set_env.sh"
 
 echo "==> Checking sudo access (step 4 needs it to install PX4's build deps)..."
 if ! sudo -v; then

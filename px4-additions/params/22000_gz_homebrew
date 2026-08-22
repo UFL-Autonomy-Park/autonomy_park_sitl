@@ -8,7 +8,7 @@
 . ${R}etc/init.d/rc.mc_defaults
 
 PX4_SIMULATOR=${PX4_SIMULATOR:=gz} # should already be set elsewhere (i.e., from a launch script)
-PX4_GZ_WORLD=${PX4_GZ_WORLD:=autonomy_park} # overwritten if build with "make px4_sitl gz_homebrew_autonomy_park"; set to "default" and build with "make px4_sitl gz_homebrew" if you want an empty world
+PX4_GZ_WORLD=${PX4_GZ_WORLD:=autonomy_park} # scripts/launch_gazebo.sh always sets this; fallback covers a bare "PX4_SYS_AUTOSTART=22000 ./build/px4_sitl_default/bin/px4" invocation - set to "default" for an empty world
 PX4_SIM_MODEL=${PX4_SIM_MODEL:=homebrew} # should already be set elsewhere (i.e., from a launch script)
 PX4_GZ_MODEL_POSE=${PX4_GZ_MODEL_POSE:="-20,0,0.05,0,0,0"} # so we don't spawn in a hill
 # note: origin is at middle of park on the floor, +x points away from shed, +y points toward SW 23rd Terrace, and z is up (i.e., a local ENU frame)

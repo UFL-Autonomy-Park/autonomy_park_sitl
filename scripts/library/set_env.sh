@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Shared environment and helper functions for autonomy_park_sitl scripts.
-# Must be *sourced*, not executed: `source scripts/set_env.sh`.
+# Must be *sourced*, not executed: `source scripts/library/set_env.sh`.
 
 if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
     echo "Error: set_env.sh must be sourced, not executed." >&2
@@ -66,11 +66,11 @@ export PX4_HOME_LAT=29.628147
 export PX4_HOME_LON=-82.360333
 export PX4_HOME_ALT=0.0
 
-# Custom Gazebo world/model, added via px4-additions/ (see write_px4_with_px4_additions.sh)
+# Custom Gazebo world/model, added via px4-additions/ (see library/write_px4_with_px4_additions.sh)
 export PX4_GZ_WORLD=autonomy_park
 export PX4_SIMULATOR=gz
 export PX4_SIM_MODEL=gz_homebrew
-export PX4_SYS_AUTOSTART=4025
+export PX4_SYS_AUTOSTART=22000
 export PX4_GZ_MODEL_POSE="3.0,0,0.5,0,0,0"
 
 # PX4's `make` config target (see build_px4.sh). Deliberately just
@@ -79,9 +79,24 @@ export PX4_GZ_MODEL_POSE="3.0,0,0.5,0,0,0"
 # COMMAND runs the px4 binary directly), so naming it here would make a
 # *build* also spawn Gazebo. Plain "px4_sitl" builds the default `all`
 # target, which already includes px4 and px4_gz_plugins (declared ALL) -
-# everything scripts/spawn_sim_env.sh needs - without launching anything.
+# everything scripts/launch_gazebo.sh needs - without launching anything.
 export PX4_MAKE_TARGET="px4_sitl"
 
 export PX4_DIR="$PROJECT_ROOT/PX4-Autopilot"
 export PX4_ADDITIONS_DIR="$PROJECT_ROOT/px4-additions"
 export ROS2_DIR="$PROJECT_ROOT/ros2_ws"
+
+# --- ROS 2 DDS configuration ------------------------------------------------
+#
+# ~/.bashrc points Fast-DDS at the physical lab network for real-hardware use
+# (a static-IP interface whitelist + a remote discovery server) - on a
+# machine that isn't on that network, that whitelist filters out every
+# interface it actually has, so DDS discovery silently finds nothing:
+# `ros2 topic list` shows only /parameter_events and /rosout, and every
+# node's service/topic waits hang forever. SITL runs everything on this one
+# machine, so force plain localhost DDS instead, scoped to just scripts that
+# source this file - the real-hardware config in ~/.bashrc is left untouched
+# for when this same shell is later used to fly the real vehicle.
+unset FASTRTPS_DEFAULT_PROFILES_FILE
+unset ROS_DISCOVERY_SERVER
+export ROS_LOCALHOST_ONLY=1
