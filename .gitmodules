@@ -9,5 +9,5 @@
 	url = https://github.com/PX4/px4_msgs.git
 [submodule "ros2_ws/src/aero_common"]
 	path = ros2_ws/src/aero_common
-	url = git@github.com:UFL-Autonomy-Park/aero_common.git
+	url = https://github.com/UFL-Autonomy-Park/aero_common.git
 	branch = 1.0.x-maintenance
