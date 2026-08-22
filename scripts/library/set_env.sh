@@ -100,3 +100,31 @@ export ROS2_DIR="$PROJECT_ROOT/ros2_ws"
 unset FASTRTPS_DEFAULT_PROFILES_FILE
 unset ROS_DISCOVERY_SERVER
 export ROS_LOCALHOST_ONLY=1
+
+# --- Python virtual environment ---------------------------------------------
+#
+# PX4's build system needs several Python packages (Tools/setup/requirements.txt)
+# on PATH. Debian/Ubuntu's Python 3.11+ marks itself "externally managed"
+# (PEP 668) and refuses `pip install` outside a virtualenv regardless of
+# --user - and --user is invalid once you *are* inside one (pip errors
+# outright). A project-local venv sidesteps both problems and keeps these
+# packages out of the user's global site-packages. Created once here, then
+# activated on every source of this file so every script gets it for free.
+# --system-site-packages so the apt-installed ROS 2 Python packages (rclpy,
+# colcon, ...) stay importable inside it too.
+VENV_DIR="$PROJECT_ROOT/venv_host"
+if [[ ! -d "$VENV_DIR" ]]; then
+    echo "[*] Creating Python virtual environment at $VENV_DIR..." >&2
+    if ! python3 -m venv --system-site-packages "$VENV_DIR"; then
+        echo "Error: failed to create the Python virtual environment at $VENV_DIR." >&2
+        echo "  This usually means python3-venv isn't installed:" >&2
+        echo "    sudo apt install python3-venv" >&2
+        echo "  Then re-run this script." >&2
+        exit 1
+    fi
+fi
+
+# venv's activate script references unset vars (e.g. $PS1) under `set -u`.
+set +u
+source "$VENV_DIR/bin/activate"
+set -u
