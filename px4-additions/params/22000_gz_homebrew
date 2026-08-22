@@ -75,11 +75,11 @@ param set-default NAV_DLL_ACT 0      # disable need for QGC in SITL; otherwise P
 param set-default EKF2_HGT_REF 2
 
 # ── Real-World Parity (failsafes) ───────────────────────────────────────────
-param set-default COM_RC_IN_MODE 3   # real: RC+Joystick w/ fallback; also needed in SITL (no physical RC)
-param set-default COM_OBL_RC_ACT 4   # real: offboard-signal-loss failsafe -> Land (SITL default was Hold)
-param set-default COM_OF_LOSS_T 1.0  # real: offboard-signal-loss failsafe fires after 1s (PX4 default is 0.5s)
-param set-default GF_ACTION 5        # real: geofence breach action -> Land (PX4 default is Hold)
-param set-default NAV_RCL_ACT 3      # real: RC-loss failsafe -> Land (only relevant with a physical RC transmitter)
+param set-default COM_RC_IN_MODE 3
+param set-default COM_OBL_RC_ACT 4
+param set-default COM_OF_LOSS_T 1.0
+param set-default GF_ACTION 5
+param set-default NAV_RCL_ACT 3
 
 # ── Misc ─────────────────────────────────────────────────────────────────────
 param set-default MPC_THR_HOVER 0.60 # hover throttle (left default; never tuned per-vehicle)
