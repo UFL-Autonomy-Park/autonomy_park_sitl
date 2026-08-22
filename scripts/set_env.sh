@@ -73,8 +73,14 @@ export PX4_SIM_MODEL=gz_homebrew
 export PX4_SYS_AUTOSTART=4025
 export PX4_GZ_MODEL_POSE="3.0,0,0.5,0,0,0"
 
-# PX4's `make` target for this world/model combo (see rebuild_px4.sh)
-export PX4_MAKE_TARGET="px4_sitl gz_homebrew_autonomy_park"
+# PX4's `make` config target (see build_px4.sh). Deliberately just
+# "px4_sitl", not "px4_sitl gz_homebrew_autonomy_park" - the gz_<model>_<world>
+# target is PX4's own launch mechanism (it's a CMake custom target whose
+# COMMAND runs the px4 binary directly), so naming it here would make a
+# *build* also spawn Gazebo. Plain "px4_sitl" builds the default `all`
+# target, which already includes px4 and px4_gz_plugins (declared ALL) -
+# everything scripts/spawn_sim_env.sh needs - without launching anything.
+export PX4_MAKE_TARGET="px4_sitl"
 
 export PX4_DIR="$PROJECT_ROOT/PX4-Autopilot"
 export PX4_ADDITIONS_DIR="$PROJECT_ROOT/px4-additions"

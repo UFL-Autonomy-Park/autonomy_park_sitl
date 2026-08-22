@@ -40,4 +40,4 @@ echo "==> [4/4] Installing PX4's own SITL build dependencies..."
 sudo "$PX4_DIR/Tools/setup/ubuntu.sh"
 
 echo
-echo "Setup complete. Next: scripts/rebuild_px4.sh to build PX4 SITL."
+echo "Setup complete. Next: scripts/build_px4.sh to build PX4 SITL."

@@ -51,7 +51,7 @@ Syncs `px4-additions/` and builds PX4 SITL — re-run after changing anything
 under `px4-additions/`:
 
 ```bash
-./scripts/rebuild_px4.sh
+./scripts/build_px4.sh
 ```
 
 Launches the built PX4 SITL instance against Gazebo, waits for the "Ready
@@ -79,7 +79,7 @@ get reaped — `Ctrl-C` to stop it:
 | Script | Purpose |
 |---|---|
 | `scripts/init.sh` | One-time setup: pulls Git LFS assets, initializes all submodules (including PX4's nested ones), and installs PX4's own SITL build dependencies. Run once after cloning. |
-| `scripts/rebuild_px4.sh` | Syncs `px4-additions/` into `PX4-Autopilot/` and rebuilds PX4 SITL from a clean state. Run after changing anything under `px4-additions/`. |
+| `scripts/build_px4.sh` | Syncs `px4-additions/` into `PX4-Autopilot/` and rebuilds PX4 SITL from a clean state. Run after changing anything under `px4-additions/`. |
 | `scripts/spawn_sim_env.sh` | Launches the built PX4 SITL instance against Gazebo. |
 
 ## Contact
