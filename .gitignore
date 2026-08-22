@@ -9,7 +9,10 @@
 *.slo
 *.lo
 *.o
-*.obj
+# *.obj deliberately excluded from this pattern: this project never produces
+# MSVC-style .obj files (Linux/Makefile builds only emit .o), and a blanket
+# *.obj rule was silently gitignoring px4-additions/worlds/meshes/*.obj
+# (Wavefront mesh files), which is why they never made it into the repo.
 
 # Precompiled Headers
 *.gch
