@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
-# One-time setup: run this once, right after cloning the repo. Pulls Git LFS
-# assets and initializes all submodules (including PX4's own nested
-# submodules such as NuttX and MAVLink).
+# One-time setup: run this once, right after cloning the repo. Installs Git
+# LFS (if needed) and pulls its assets, and initializes all submodules
+# (including PX4's own nested submodules such as NuttX and MAVLink).
 set -euo pipefail
 
 trap 'echo "ERROR: init.sh failed at line $LINENO: \"$BASH_COMMAND\"" >&2' ERR
@@ -9,7 +9,7 @@ trap 'echo "ERROR: init.sh failed at line $LINENO: \"$BASH_COMMAND\"" >&2' ERR
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "$SCRIPT_DIR/library/set_env.sh"
 
-echo "==> Checking sudo access (step 4 needs it to install PX4's build deps)..."
+echo "==> Checking sudo access (several steps below need it to install packages)..."
 if ! sudo -v; then
     echo "ERROR: could not get sudo access. This is a local machine/policy issue," >&2
     echo "  not something this script controls. If sudo hung above rather than" >&2
@@ -18,17 +18,14 @@ if ! sudo -v; then
     exit 1
 fi
 
-echo "==> [1/7] Fetching Git LFS assets (custom meshes/textures)..."
-if command -v git-lfs >/dev/null 2>&1; then
-    git -C "$PROJECT_ROOT" lfs install --local
-    git -C "$PROJECT_ROOT" lfs pull
-else
-    echo "ERROR: git-lfs is not installed. px4-additions/models/*/meshes/*" >&2
-    echo "  and worlds/materials/textures/* would remain empty LFS pointer files," >&2
-    echo "  and Gazebo would fail to load the custom model's meshes." >&2
-    echo "  Install git-lfs, then re-run this script." >&2
-    exit 1
+echo "==> [1/7] Installing Git LFS and fetching assets (custom meshes/textures)..."
+if ! command -v git-lfs >/dev/null 2>&1; then
+    curl -s https://packagecloud.io/install/repositories/github/git-lfs/script.deb.sh | sudo bash
+    sudo apt-get install -y git-lfs
+    git lfs install
 fi
+git -C "$PROJECT_ROOT" lfs install --local
+git -C "$PROJECT_ROOT" lfs pull
 
 echo "==> [2/7] Initializing and updating submodules (including nested ones, e.g. aero_common's own submodules)..."
 git -C "$PROJECT_ROOT" submodule update --init --recursive

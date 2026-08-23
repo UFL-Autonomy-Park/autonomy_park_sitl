@@ -45,7 +45,8 @@ tested with 8.15.0).
 
 ### Git LFS
 
-Install per <https://git-lfs.com/>.
+Install per <https://git-lfs.com/> (will be installed by `init.sh` if not
+already present).
 
 ## One-time setup
 
@@ -53,10 +54,11 @@ Install per <https://git-lfs.com/>.
 ./scripts/init.sh
 ```
 
-Pulls Git LFS content, initializes all submodules (including PX4's own
-nested submodules), installs PX4's own SITL build dependencies (into a
-project-local Python venv, `venv_host/`), and installs MAVROS and geodesy.
-Safe to re-run — it skips steps that are already done. If something fails, the
+Installs Git LFS (if needed) and pulls its content, initializes all
+submodules (including PX4's own nested submodules), installs PX4's own SITL
+build dependencies (into a project-local Python venv, `venv_host/`), and
+installs MAVROS and geodesy. Safe to re-run — it skips steps that are
+already done. If something fails, the
 error names the exact step and command, so just fix that and re-run.
 
 ## Building & running a SITL simulation
