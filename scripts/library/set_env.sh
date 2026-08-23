@@ -113,9 +113,16 @@ export ROS_LOCALHOST_ONLY=1
 # --system-site-packages so the apt-installed ROS 2 Python packages (rclpy,
 # colcon, ...) stay importable inside it too.
 VENV_DIR="$PROJECT_ROOT/venv_host"
-if [[ ! -d "$VENV_DIR" ]]; then
+# Check for the activate script, not just the directory - `python3 -m venv`
+# creates the directory before it can fail (e.g. missing ensurepip), which
+# would otherwise leave a half-built venv_host/ behind that this check
+# would then treat as "already created" on every subsequent run, masking
+# the real error behind a confusing "No such file or directory" on the
+# `source .../activate` below instead.
+if [[ ! -f "$VENV_DIR/bin/activate" ]]; then
     echo "[*] Creating Python virtual environment at $VENV_DIR..." >&2
     if ! python3 -m venv --system-site-packages "$VENV_DIR"; then
+        rm -rf "$VENV_DIR"
         echo "Error: failed to create the Python virtual environment at $VENV_DIR." >&2
         echo "  This usually means python3-venv isn't installed:" >&2
         echo "    sudo apt install python3-venv" >&2
