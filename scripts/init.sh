@@ -18,7 +18,7 @@ if ! sudo -v; then
     exit 1
 fi
 
-echo "==> [1/5] Fetching Git LFS assets (custom meshes/textures)..."
+echo "==> [1/6] Fetching Git LFS assets (custom meshes/textures)..."
 if command -v git-lfs >/dev/null 2>&1; then
     git -C "$PROJECT_ROOT" lfs install --local
     git -C "$PROJECT_ROOT" lfs pull
@@ -30,13 +30,13 @@ else
     exit 1
 fi
 
-echo "==> [2/5] Initializing and updating submodules (including nested ones, e.g. aero_common's own submodules)..."
+echo "==> [2/6] Initializing and updating submodules (including nested ones, e.g. aero_common's own submodules)..."
 git -C "$PROJECT_ROOT" submodule update --init --recursive
 
-echo "==> [3/5] Verifying PX4-Autopilot checkout..."
+echo "==> [3/6] Verifying PX4-Autopilot checkout..."
 echo "    PX4-Autopilot is ready at $(git -C "$PX4_DIR" describe --tags HEAD 2>/dev/null || git -C "$PX4_DIR" rev-parse --short HEAD)"
 
-echo "==> [4/5] Installing PX4's own SITL build dependencies..."
+echo "==> [4/6] Installing PX4's own SITL build dependencies..."
 sudo "$PX4_DIR/Tools/setup/ubuntu.sh"
 
 # ubuntu.sh above makes its own best-effort attempt at these too, but that
@@ -45,8 +45,11 @@ sudo "$PX4_DIR/Tools/setup/ubuntu.sh"
 # this script started. This is the step that actually matters: installing
 # into that already-active venv, as our own (non-root) user, no --user flag
 # needed (or accepted - pip errors if you pass --user inside a venv).
-echo "==> [5/5] Installing PX4's Python build dependencies into venv_host..."
+echo "==> [5/6] Installing PX4's Python build dependencies into venv_host..."
 pip3 install -r "$PX4_DIR/Tools/setup/requirements.txt"
+
+echo "==> [6/6] Installing MAVROS..."
+sudo apt-get install -y ros-humble-mavros ros-humble-mavros-extras ros-humble-mavros-msgs
 
 echo
 echo "Setup complete. Next: scripts/build_px4.sh to build PX4 SITL."
