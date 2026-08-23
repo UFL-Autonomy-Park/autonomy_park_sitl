@@ -33,6 +33,11 @@ build `ros2_ws/`.
 `sudo apt-get install ros-humble-mavros ros-humble-mavros-extras ros-humble-mavros-msgs`
 (will be installed by `init.sh`).
 
+### geodesy
+
+`sudo apt-get install ros-humble-geodesy` (needed by `aero_common`; will be
+installed by `init.sh`).
+
 ### Gazebo Harmonic
 
 Install per <https://gazebosim.org/docs/harmonic/install_ubuntu/> (`gz sim`,
@@ -50,8 +55,8 @@ Install per <https://git-lfs.com/>.
 
 Pulls Git LFS content, initializes all submodules (including PX4's own
 nested submodules), installs PX4's own SITL build dependencies (into a
-project-local Python venv, `venv_host/`), and installs MAVROS. Safe to
-re-run — it skips steps that are already done. If something fails, the
+project-local Python venv, `venv_host/`), and installs MAVROS and geodesy.
+Safe to re-run — it skips steps that are already done. If something fails, the
 error names the exact step and command, so just fix that and re-run.
 
 ## Building & running a SITL simulation
