@@ -70,12 +70,39 @@ under `px4-additions/`:
 ./scripts/build_px4.sh
 ```
 
-Launches the built PX4 SITL instance against Gazebo, waits for the "Ready
-for takeoff!" log line, and stays alive so the background process doesn't
-get reaped — `Ctrl-C` to stop it:
+Launches a standalone Gazebo instance (no PX4 yet), waits for the world to
+be ready, and stays alive so the background process doesn't get reaped —
+`Ctrl-C` to stop it. Loading the world is the slow part, so run this once
+and leave it running:
 
 ```bash
 ./scripts/launch_gazebo.sh
+```
+
+With Gazebo already running (see above), spawns a single PX4 instance
+against it and stays alive — `Ctrl-C` to stop just PX4, leaving Gazebo
+running. Re-run this any time you want to reset the vehicle's pose: it kills
+any previous PX4 instance first (see below), then either spawns the vehicle
+model for the first time or, if it's still there from a previous run,
+resets its pose and re-attaches PX4 to it. PX4's EKF crashes if you
+teleport its rigid body mid-run (a PX4 limitation), so a full PX4 restart —
+not a world reload — is the only way to reset pose, which is why this is a
+separate script from `launch_gazebo.sh`:
+
+```bash
+./scripts/spawn_one_homebrew_instance.sh
+```
+
+Kills whatever PX4 instance `spawn_one_homebrew_instance.sh` last spawned,
+without restarting Gazebo or touching the vehicle model — Gazebo Harmonic's
+rendering engine reliably crashes if a model with camera sensors is removed
+and recreated, so the model is deliberately left in place and reused on the
+next spawn instead. Safe to run any time, including when nothing is
+running — `spawn_one_homebrew_instance.sh` also calls this itself before
+spawning:
+
+```bash
+./scripts/kill_all_homebrew_instances.sh
 ```
 
 ## Running the ROS 2 autonomy stack
@@ -87,7 +114,7 @@ changing anything there:
 ./scripts/build_ros2_autonomy_stack.sh
 ```
 
-With Gazebo/PX4 already running (see above), this launches MAVROS,
+With Gazebo and a PX4 instance already running (see above), this launches MAVROS,
 `px4_telemetry`, `px4_teleop`, `px4_safety_lib`, and the RViz2
 visualization together:
 
@@ -147,9 +174,11 @@ sourced afterward, in this or any other terminal, can change it. So:
 |---|---|
 | `scripts/init.sh` | One-time setup: pulls Git LFS assets, initializes all submodules (including PX4's nested ones), and installs PX4's own SITL build dependencies. Run once after cloning. |
 | `scripts/build_px4.sh` | Syncs `px4-additions/` into `PX4-Autopilot/` and rebuilds PX4 SITL from a clean state. Run after changing anything under `px4-additions/`. |
-| `scripts/launch_gazebo.sh` | Launches the built PX4 SITL instance against Gazebo. |
+| `scripts/launch_gazebo.sh` | Launches a standalone Gazebo instance (no PX4). Run once; leave it running. |
+| `scripts/spawn_one_homebrew_instance.sh` | Spawns a single PX4 instance against an already-running Gazebo. Run after `scripts/launch_gazebo.sh`; re-run any time to reset the vehicle's pose. |
+| `scripts/kill_all_homebrew_instances.sh` | Kills whatever `spawn_one_homebrew_instance.sh` last spawned, without touching Gazebo. Safe to run any time. |
 | `scripts/build_ros2_autonomy_stack.sh` | Builds every package under `ros2_ws/src` with `colcon`. Run after changing anything there or after cloning for the first time. |
-| `scripts/launch_ros2_autonomy_stack.sh` | Launches MAVROS + the autonomy stack. Run after `scripts/launch_gazebo.sh`. |
+| `scripts/launch_ros2_autonomy_stack.sh` | Launches MAVROS + the autonomy stack. Run after `scripts/spawn_one_homebrew_instance.sh`. |
 
 ## Contact
 
