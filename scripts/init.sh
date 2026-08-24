@@ -18,7 +18,7 @@ if ! sudo -v; then
     exit 1
 fi
 
-echo "==> [1/8] Installing Git LFS and fetching assets (custom meshes/textures)..."
+echo "==> [1/9] Installing Git LFS and fetching assets (custom meshes/textures)..."
 if ! command -v git-lfs >/dev/null 2>&1; then
     curl -s https://packagecloud.io/install/repositories/github/git-lfs/script.deb.sh | sudo bash
     sudo apt-get install -y git-lfs
@@ -27,13 +27,13 @@ fi
 git -C "$PROJECT_ROOT" lfs install --local
 git -C "$PROJECT_ROOT" lfs pull
 
-echo "==> [2/8] Initializing and updating submodules (including nested ones, e.g. aero_common's own submodules)..."
+echo "==> [2/9] Initializing and updating submodules (including nested ones, e.g. aero_common's own submodules)..."
 git -C "$PROJECT_ROOT" submodule update --init --recursive
 
-echo "==> [3/8] Verifying PX4-Autopilot checkout..."
+echo "==> [3/9] Verifying PX4-Autopilot checkout..."
 echo "    PX4-Autopilot is ready at $(git -C "$PX4_DIR" describe --tags HEAD 2>/dev/null || git -C "$PX4_DIR" rev-parse --short HEAD)"
 
-echo "==> [4/8] Installing PX4's own SITL build dependencies..."
+echo "==> [4/9] Installing PX4's own SITL build dependencies..."
 sudo "$PX4_DIR/Tools/setup/ubuntu.sh"
 
 # ubuntu.sh above makes its own best-effort attempt at these too, but that
@@ -42,17 +42,29 @@ sudo "$PX4_DIR/Tools/setup/ubuntu.sh"
 # this script started. This is the step that actually matters: installing
 # into that already-active venv, as our own (non-root) user, no --user flag
 # needed (or accepted - pip errors if you pass --user inside a venv).
-echo "==> [5/8] Installing PX4's Python build dependencies into venv_host..."
+echo "==> [5/9] Installing PX4's Python build dependencies into venv_host..."
 pip3 install -r "$PX4_DIR/Tools/setup/requirements.txt"
 
-echo "==> [6/8] Installing MAVROS..."
+echo "==> [6/9] Installing MAVROS..."
 sudo apt-get install -y ros-humble-mavros ros-humble-mavros-extras ros-humble-mavros-msgs
 
-echo "==> [7/8] Installing MAVROS's GeographicLib datasets..."
+echo "==> [7/9] Installing MAVROS's GeographicLib datasets..."
 curl -LsSf https://raw.githubusercontent.com/mavlink/mavros/ros2/mavros/scripts/install_geographiclib_datasets.sh | sudo bash
 
-echo "==> [8/8] Installing geodesy (needed by aero_common)..."
+echo "==> [8/9] Installing geodesy (needed by aero_common)..."
 sudo apt-get install -y ros-humble-geodesy
+
+# mkdir -p (not plain mkdir) so re-running this doesn't fail on an existing
+# build dir - cmake/make are themselves safe to re-run against one.
+echo "==> [9/9] Building Micro-XRCE-DDS-Agent..."
+mkdir -p "$PROJECT_ROOT/Micro-XRCE-DDS-Agent/build"
+(
+    cd "$PROJECT_ROOT/Micro-XRCE-DDS-Agent/build"
+    cmake ..
+    make
+    sudo make install
+)
+sudo ldconfig /usr/local/lib/
 
 echo
 echo "Setup complete. Next: scripts/build_px4.sh to build PX4 SITL."
