@@ -100,6 +100,33 @@ connects MAVROS to PX4 SITL's default MAVLink port. Only single-agent
 setups have been tested against this SITL — the multi-agent launch files
 under `aero_common/minimal_startup_air/launch/` are untested here.
 
+### DDS scoping (`ROS_LOCALHOST_ONLY`)
+
+`set_env.sh` forces every script that sources it onto `ROS_LOCALHOST_ONLY=1`
+and unsets any lab/robot-network DDS config (`FASTRTPS_DEFAULT_PROFILES_FILE`,
+`ROS_DISCOVERY_SERVER`, `RMW_IMPLEMENTATION`) your `~/.bashrc` might set for
+real-hardware use, so this SITL never has to fight a static-IP interface
+whitelist or an unreachable discovery server. This only takes effect for
+processes actually started from a shell that sourced `set_env.sh` — a DDS
+participant's config is fixed at that process's own startup and nothing
+sourced afterward, in this or any other terminal, can change it. So:
+
+- Launch everything for this SITL (`launch_gazebo.sh`,
+  `launch_ros2_autonomy_stack.sh`, and any manual `ros2 run`/`rviz2`/etc.)
+  from a terminal that has sourced `set_env.sh`. A stray node started from a
+  plain terminal will keep broadcasting on your real network interfaces for
+  as long as it runs, not just localhost.
+- `ros2 topic list` (and `node list`, etc.) can be misleading: those
+  commands are served by a single background `ros2` daemon shared by every
+  terminal on the machine, which locks in whatever DDS config was active
+  when it first started and ignores what any later terminal sources. So a
+  terminal that never sourced `set_env.sh` can still *list* this SITL's
+  topics if that shared daemon happens to be loopback-scoped from an earlier
+  session — but `ros2 topic echo`/actual subscriptions open their own
+  connection using that terminal's real env, so they'll correctly hang with
+  no messages. If a topic listing looks wrong, run `ros2 daemon stop` (it
+  respawns fresh on the next `ros2` command) rather than trusting it as-is.
+
 ## Custom assets (`px4-additions/`)
 
 - `models/homebrew/` — the flight model: includes `homebrew_base` plus
@@ -121,7 +148,7 @@ under `aero_common/minimal_startup_air/launch/` are untested here.
 | `scripts/init.sh` | One-time setup: pulls Git LFS assets, initializes all submodules (including PX4's nested ones), and installs PX4's own SITL build dependencies. Run once after cloning. |
 | `scripts/build_px4.sh` | Syncs `px4-additions/` into `PX4-Autopilot/` and rebuilds PX4 SITL from a clean state. Run after changing anything under `px4-additions/`. |
 | `scripts/launch_gazebo.sh` | Launches the built PX4 SITL instance against Gazebo. |
-| `scripts/build_ros2_autonomy_stack.sh` | Builds every package under `ros2_ws/src` with `colcon`. Run after changing anything there. |
+| `scripts/build_ros2_autonomy_stack.sh` | Builds every package under `ros2_ws/src` with `colcon`. Run after changing anything there or after cloning for the first time. |
 | `scripts/launch_ros2_autonomy_stack.sh` | Launches MAVROS + the autonomy stack. Run after `scripts/launch_gazebo.sh`. |
 
 ## Contact

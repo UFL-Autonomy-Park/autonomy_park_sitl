@@ -62,6 +62,7 @@ copy_contents() {
 # --- PX4 SITL configuration ------------------------------------------------
 
 # PX4 SITL home position (middle of the Autonomy Park)
+# Set by Max Gardenswartz (required changing since the old one was not perfectly centered on the park)
 export PX4_HOME_LAT=29.628147
 export PX4_HOME_LON=-82.360333
 export PX4_HOME_ALT=0.0
@@ -77,9 +78,7 @@ export PX4_GZ_MODEL_POSE="3.0,0,0.5,0,0,0"
 # "px4_sitl", not "px4_sitl gz_homebrew_autonomy_park" - the gz_<model>_<world>
 # target is PX4's own launch mechanism (it's a CMake custom target whose
 # COMMAND runs the px4 binary directly), so naming it here would make a
-# *build* also spawn Gazebo. Plain "px4_sitl" builds the default `all`
-# target, which already includes px4 and px4_gz_plugins (declared ALL) -
-# everything scripts/launch_gazebo.sh needs - without launching anything.
+# *build* also spawn Gazebo.
 export PX4_MAKE_TARGET="px4_sitl"
 
 export PX4_DIR="$PROJECT_ROOT/PX4-Autopilot"
@@ -87,31 +86,22 @@ export PX4_ADDITIONS_DIR="$PROJECT_ROOT/px4-additions"
 export ROS2_DIR="$PROJECT_ROOT/ros2_ws"
 
 # --- ROS 2 DDS configuration ------------------------------------------------
-#
-# ~/.bashrc points Fast-DDS at the physical lab network for real-hardware use
-# (a static-IP interface whitelist + a remote discovery server) - on a
-# machine that isn't on that network, that whitelist filters out every
-# interface it actually has, so DDS discovery silently finds nothing:
-# `ros2 topic list` shows only /parameter_events and /rosout, and every
-# node's service/topic waits hang forever. SITL runs everything on this one
-# machine, so force plain localhost DDS instead, scoped to just scripts that
-# source this file - the real-hardware config in ~/.bashrc is left untouched
-# for when this same shell is later used to fly the real vehicle.
+# VERY IMPORTANT: makes sure sim topics do not get published to real robots
+# If you cannot see your real robot topics, open a new terminal that hasn't sourced
+# set_env.sh. Understanding this is key to ROS 2 networking!
 unset FASTRTPS_DEFAULT_PROFILES_FILE
 unset ROS_DISCOVERY_SERVER
-export ROS_LOCALHOST_ONLY=1
+unset RMW_IMPLEMENTATION
+export ROS_LOCALHOST_ONLY=1 # <-- CRITICAL
+export ROS_DOMAIN_ID=0
+
 
 # --- Python virtual environment ---------------------------------------------
 #
 # PX4's build system needs several Python packages (Tools/setup/requirements.txt)
 # on PATH. Debian/Ubuntu's Python 3.11+ marks itself "externally managed"
-# (PEP 668) and refuses `pip install` outside a virtualenv regardless of
-# --user - and --user is invalid once you *are* inside one (pip errors
-# outright). A project-local venv sidesteps both problems and keeps these
-# packages out of the user's global site-packages. Created once here, then
-# activated on every source of this file so every script gets it for free.
-# --system-site-packages so the apt-installed ROS 2 Python packages (rclpy,
-# colcon, ...) stay importable inside it too.
+# (PEP 668) and refuses `pip install` outside a virtualenv, hence the deviation from the PX4
+# tutorials.
 VENV_DIR="$PROJECT_ROOT/venv_host"
 # Check for the activate script, not just the directory - `python3 -m venv`
 # creates the directory before it can fail (e.g. missing ensurepip), which
