@@ -6,26 +6,10 @@
 # launch_ros2_autonomy_stack.sh launches `ros2 launch` via `setsid`, which
 # puts it (and every node it spawns as a child) in a new session whose PGID
 # equals the launch process's own PID. That PID is recorded in
-# /tmp/ros2_autonomy_stack.pid. Killing -PGID (the negative form) signals the
-# whole group at once, so this reaches every node `ros2 launch` started
-# without matching on process names/command lines at all - if `ros2 launch`
-# ever dies without cleanly reaping its children (e.g. the underlying PX4
-# instance disappearing out from under it), untracked orphaned nodes are
-# exactly what pattern-matching by name would (unreliably) try to catch, and
-# what PGID-based tracking avoids needing to.
-pidfile="/tmp/ros2_autonomy_stack.pid"
+# /tmp/ros2_autonomy_stack.pid. See library/process.sh for why PGID-based
+# killing is used instead of pattern-matching process names/command lines.
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "$SCRIPT_DIR/process.sh"
 
-pid="$(cat "$pidfile" 2>/dev/null)"
-rm -f "$pidfile"
-
-[[ "$pid" =~ ^[0-9]+$ ]] || exit 0
-kill -0 "-$pid" 2>/dev/null || exit 0  # group already gone
-
-kill -TERM "-$pid" 2>/dev/null
-for _ in $(seq 1 50); do
-    kill -0 "-$pid" 2>/dev/null || break
-    sleep 0.1
-done
-kill -KILL "-$pid" 2>/dev/null || true
-
+kill_pidfile_group /tmp/ros2_autonomy_stack.pid "ROS 2 autonomy stack"
 exit 0

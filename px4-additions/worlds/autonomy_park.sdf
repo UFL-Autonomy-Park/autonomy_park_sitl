@@ -208,15 +208,15 @@
       <pose>0 0 0 0 0 0</pose>
       <link name='link'>
         <collision name='collision'>
-          <pose>-8.288 3.644 0 0 0 0</pose>
+          <pose>-12.9456 3.644 0 0 0 0</pose>
           <geometry><mesh><uri>meshes/hill_collision_box.obj</uri><scale>1 1 1</scale></mesh></geometry>
         </collision>
         <visual name='visual'>
           <geometry>
             <heightmap>
               <uri>materials/textures/hill_heightmap.png</uri>
-              <size>20.0 13.0 1.0</size>
-              <pos>-8.288 3.644 0.001</pos>
+              <size>18.0 12.0 0.75</size>
+              <pos>-12.9456 3.644 0.001</pos>
               <texture>
                 <diffuse>materials/textures/sparse_ground_foliage_texture.jpg</diffuse>
                 <normal>materials/textures/sparse_ground_foliage_reflection_map.png</normal>

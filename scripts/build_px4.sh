@@ -27,8 +27,4 @@ rm -rf "$PX4_DIR/build"
 echo "[*] Building PX4 SITL ($PX4_MAKE_TARGET)..."
 make -C "$PX4_DIR" $PX4_MAKE_TARGET
 
-echo "[+] Build complete. Run scripts/spawn_one_homebrew_instance.sh (after"
-echo "    scripts/launch_gazebo.sh, if it isn't already running)."
-echo "    NOTE: if you changed the world or a model (not just airframe"
-echo "    params), an already-running Gazebo is still serving the OLD"
-echo "    version - restart scripts/launch_gazebo.sh too."
+echo "[+] Build complete. Refer back to the README.md for next steps."

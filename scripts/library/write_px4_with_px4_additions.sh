@@ -51,12 +51,3 @@ done
 copy_contents "$PX4_ADDITIONS_DIR/worlds" "$PX4_DIR/Tools/simulation/gz/worlds"
 
 echo "Successfully synchronized custom assets into PX4-Autopilot."
-
-if [[ -d "$PX4_DIR/build" ]]; then
-    echo
-    echo "NOTE: an existing build/ dir was found. PX4's CMake globs the"
-    echo "worlds directory and the gz_bridge build-target list at configure"
-    echo "time, so a new world, or a newly-registered airframe, won't take"
-    echo "effect until you reconfigure: rm -rf '$PX4_DIR/build/px4_sitl_default'"
-    echo "and rebuild, or re-run 'cmake' in that build directory."
-fi
