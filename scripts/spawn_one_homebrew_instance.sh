@@ -3,7 +3,7 @@
 # Gazebo world (see scripts/launch_gazebo.sh), attaching to it rather than
 # launching a new one. Re-run this any time you want to reset the vehicle's
 # pose - it kills any previous instance first (see
-# kill_all_homebrew_instances.sh, which also resets the model to a clean
+# kill_all_px4_instances.sh, which also resets the model to a clean
 # resting pose), then attaches a fresh PX4 to it. Teleporting a running
 # PX4's rigid body crashes its EKF (a PX4 limitation, not fixable from
 # here), so a full PX4 restart is the only way to reset pose - this script
@@ -13,7 +13,7 @@
 # On the very first run against a given Gazebo instance, no model exists
 # yet, so this spawns one (PX4's normal path). On every run after that, the
 # model from the previous run is still sitting in Gazebo, already reset by
-# kill_all_homebrew_instances.sh above - deliberately not removed, see that
+# kill_all_px4_instances.sh above - deliberately not removed, see that
 # script for why - so this attaches PX4 to the existing model
 # (`PX4_GZ_MODEL_NAME`) rather than spawning a new one. See
 # library/homebrew_instance.sh for both halves of this (launch_px4).
@@ -39,7 +39,7 @@ if ! gz service -i --service "/world/$PX4_GZ_WORLD/scene/info" 2>&1 | grep -q "S
 fi
 
 echo "[*] Killing any previous PX4 instance..."
-"$SCRIPT_DIR/kill_all_homebrew_instances.sh"
+"$SCRIPT_DIR/kill_all_px4_instances.sh"
 
 # --- Launch sequence ---
 
@@ -56,7 +56,7 @@ echo "[+] PX4 instance 0 is ready! Ctrl-C to stop (Gazebo keeps running)."
 # a child of this shell - Ctrl-C here won't reach it on its own, and a bare
 # `wait` would return immediately instead of blocking on it. Trap the
 # interrupt and clean up explicitly instead.
-trap '"$SCRIPT_DIR/kill_all_homebrew_instances.sh"; exit 0' INT TERM
+trap '"$SCRIPT_DIR/kill_all_px4_instances.sh"; exit 0' INT TERM
 
 while kill -0 "-$(cat /tmp/px4_instance_0.pid 2>/dev/null)" 2>/dev/null; do
     sleep 1

@@ -110,14 +110,14 @@ command (it does this automatically), or run this from any terminal, any
 time:
 
 ```bash
-./scripts/kill_all_homebrew_instances.sh
+./scripts/kill_all_px4_instances.sh
 ```
 
 | Script | Purpose |
 |---|---|
 | `scripts/launch_gazebo.sh` | Launches a standalone Gazebo instance (no PX4). Run once; leave it running. |
 | `scripts/spawn_one_homebrew_instance.sh` | Spawns a single PX4 instance against an already-running Gazebo (errors if Gazebo isn't up yet). Re-run any time to reset the vehicle's pose — kills any previous PX4 instance, then resets and re-attaches to the existing model rather than recreating it. |
-| `scripts/kill_all_homebrew_instances.sh` | Kills whatever PX4 instance `spawn_one_homebrew_instance.sh` last spawned, without touching Gazebo or the vehicle model. Safe to run any time. |
+| `scripts/kill_all_px4_instances.sh` | Kills whatever PX4 instance `spawn_one_homebrew_instance.sh` last spawned, without touching Gazebo or the vehicle model. Safe to run any time. |
 | `scripts/launch_ros2_autonomy_stack.sh` | Launches MAVROS + the autonomy stack . Run after `scripts/spawn_one_homebrew_instance.sh`. |
 
 ## Custom assets (`px4-additions/`)
@@ -146,3 +146,11 @@ while topics may display, they will never echo any messgaes! Since there is only
 one `ros2` daemon on any system, this is not fixable. If a topic listing looks wrong
 or need to do real-world robotics work, run `ros2 daemon stop` and run the scripts
 you need to ensure the `ros2` daemon uses the config in `scripts/library/set_env.sh`.
+
+> [!IMPORTANT]
+> When respawning a PX4 instance (e.g., `spawn_one_homebrew_instance.sh`),
+you much re-launch your autonomy stack (e.g., ` bash launch_ros2_autonomy_stack.sh`)
+
+> [!WARNING]
+> Avoid landing on the hill. Despite extensive debugging, the quadcopter can get stuck in the ground
+> and will not be able to takeoff again. Taking off a fresh model from ground level is okay.

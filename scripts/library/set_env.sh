@@ -70,7 +70,7 @@ export PX4_HOME_ALT=0.0
 # Custom Gazebo world/model, added via px4-additions/ (see library/write_px4_with_px4_additions.sh)
 export PX4_GZ_WORLD=autonomy_park
 export PX4_SIMULATOR=gz
-export PX4_SIM_MODEL=gz_homebrew
+export PX4_SIM_MODEL=gz_x500 # gz_ prefix required
 export PX4_SYS_AUTOSTART=22000
 export PX4_GZ_MODEL_POSE="3.0,0,0.5,0,0,0"
 

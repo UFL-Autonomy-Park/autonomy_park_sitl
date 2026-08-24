@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Shared functions for managing a single "homebrew" PX4/Gazebo vehicle
 # instance - used by both spawn_one_homebrew_instance.sh and
-# kill_all_homebrew_instances.sh, which is the only reason this lives apart
+# kill_all_px4_instances.sh, which is the only reason this lives apart
 # from either of them. Relies on PX4_* env vars set by library/set_env.sh,
 # so source that first: `source scripts/library/set_env.sh` then
 # `source scripts/library/homebrew_instance.sh`. Not meant to be run
@@ -105,7 +105,7 @@ wait_for_ready() {
 # launch_px4 INSTANCE - launches a PX4 instance against the already-running
 # Gazebo world ($PX4_GZ_WORLD). If that instance's model already exists
 # (left behind by a previous run, and already reset by
-# kill_all_homebrew_instances.sh), attaches to it (PX4_GZ_MODEL_NAME);
+# kill_all_px4_instances.sh), attaches to it (PX4_GZ_MODEL_NAME);
 # otherwise spawns it for the first time (PX4's normal create path).
 launch_px4() {
     local instance=$1

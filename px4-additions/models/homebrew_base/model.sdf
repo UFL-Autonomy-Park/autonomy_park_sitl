@@ -37,86 +37,24 @@
         </geometry>
       </visual>
 
-      <!-- Collision proxy measured directly from base_link.stl's own triangles (583k tris - far too dense to
-           collide directly), not scaled/guessed from x500. Main plate + battery hump match the mesh's bounding
-           envelope at those heights. The two landing rails are fattened to swallow their actual inverted-T taper
-           (wide foot narrowing to a thin web) into one solid box each, since a thin web modeled faithfully is
-           exactly the kind of geometry that tunnels/jitters on landing in a real-time physics step. -->
-      <collision name="base_link_collision_hub">
-        <pose>0 0 .049 0 0 0</pose>
+      <!-- Single convex cylinder bounding the whole hub+battery+rails
+           envelope (radius/height/center derived from the four separate
+           box collisions this replaced: x in [-0.273,0.273], y in
+           [-0.272,0.272], z in [-0.162,0.1105], padded slightly). Four
+           separate boxes meeting at seams turned out to have the same
+           landing-gear-sticks-in-the-ground failure mode as the world's
+           old hand-made hill collision mesh: a box resting near a seam
+           between two collision primitives is a known-bad case for
+           generic mesh/primitive contact generation. One seamless convex
+           shape - the same fix that worked for the hill - removes every
+           internal seam the vehicle's own collision could catch on. -->
+      <collision name="base_link_collision">
+        <pose>0 0 -.026 0 0 0</pose>
         <geometry>
-          <box>
-            <size>0.546 0.544 0.038</size>
-          </box>
-        </geometry>
-        <surface>
-          <contact>
-            <ode>
-              <min_depth>0.001</min_depth>
-              <!-- max_vel caps the contact push-out correction speed; 0 disables
-                   push-out correction entirely, letting sustained downward load
-                   (e.g. rotor thrust against a sloped surface) sink in without
-                   ever being corrected back out. Use the engine's default. -->
-              <max_vel>100</max_vel>
-            </ode>
-          </contact>
-          <friction>
-            <ode/>
-          </friction>
-        </surface>
-      </collision>
-      <collision name="base_link_collision_battery">
-        <pose>0 0 .089 0 0 0</pose>
-        <geometry>
-          <box>
-            <size>0.20 0.15 0.043</size>
-          </box>
-        </geometry>
-        <surface>
-          <contact>
-            <ode>
-              <min_depth>0.001</min_depth>
-              <!-- max_vel caps the contact push-out correction speed; 0 disables
-                   push-out correction entirely, letting sustained downward load
-                   (e.g. rotor thrust against a sloped surface) sink in without
-                   ever being corrected back out. Use the engine's default. -->
-              <max_vel>100</max_vel>
-            </ode>
-          </contact>
-          <friction>
-            <ode/>
-          </friction>
-        </surface>
-      </collision>
-      <collision name="base_link_collision_rail_left">
-        <pose>0 -0.185 -.066 0 0 0</pose>
-        <geometry>
-          <box>
-            <size>0.20 0.03 0.192</size>
-          </box>
-        </geometry>
-        <surface>
-          <contact>
-            <ode>
-              <min_depth>0.001</min_depth>
-              <!-- max_vel caps the contact push-out correction speed; 0 disables
-                   push-out correction entirely, letting sustained downward load
-                   (e.g. rotor thrust against a sloped surface) sink in without
-                   ever being corrected back out. Use the engine's default. -->
-              <max_vel>100</max_vel>
-            </ode>
-          </contact>
-          <friction>
-            <ode/>
-          </friction>
-        </surface>
-      </collision>
-      <collision name="base_link_collision_rail_right">
-        <pose>0 0.185 -.066 0 0 0</pose>
-        <geometry>
-          <box>
-            <size>0.20 0.03 0.192</size>
-          </box>
+          <cylinder>
+            <radius>0.28</radius>
+            <length>0.28</length>
+          </cylinder>
         </geometry>
         <surface>
           <contact>

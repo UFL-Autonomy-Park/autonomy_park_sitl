@@ -16,7 +16,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "$SCRIPT_DIR/library/set_env.sh"
 
 echo "[*] Killing any running PX4 instance..."
-"$SCRIPT_DIR/kill_all_homebrew_instances.sh"
+"$SCRIPT_DIR/kill_all_px4_instances.sh"
 
 echo "[*] Syncing px4-additions/ into PX4-Autopilot..."
 "$SCRIPT_DIR/library/write_px4_with_px4_additions.sh"
