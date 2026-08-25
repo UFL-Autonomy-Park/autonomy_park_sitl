@@ -24,7 +24,7 @@ echo "[*] Syncing px4-additions/ into PX4-Autopilot..."
 echo "[*] Removing stale build directory..."
 rm -rf "$PX4_DIR/build"
 
-echo "[*] Building PX4 SITL ($PX4_MAKE_TARGET)..."
+echo "[*] Building PX4 SITL ($PX4_MAKE_TARGET, usually about 20 seconds)..."
 make -C "$PX4_DIR" $PX4_MAKE_TARGET
 
 echo "[+] Build complete. Refer back to the README.md for next steps."

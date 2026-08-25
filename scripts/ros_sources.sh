@@ -19,6 +19,17 @@ source "$SCRIPT_DIR/sitl_env.sh"
 
 # colcon's generated setup.bash reads $COLCON_TRACE (and friends, via
 # nested local_setup.bash files) without a default, which trips `set -u`.
+# Restore whatever nounset state the caller actually had, rather than
+# forcing it back on - this file is meant to be *sourced* into an
+# interactive shell, and unconditionally leaving `set -u` on afterward
+# broke bash's own tab-completion machinery in exactly that scenario
+# ("COMPREPLY: unbound variable"), since bash-completion's internals
+# aren't nounset-safe.
+case $- in
+    *u*) _ros_sources_had_nounset=1 ;;
+    *)   _ros_sources_had_nounset=0 ;;
+esac
 set +u
 source "$ROS2_DIR/install/setup.bash"
-set -u
+(( _ros_sources_had_nounset )) && set -u
+unset _ros_sources_had_nounset

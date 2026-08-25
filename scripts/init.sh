@@ -9,6 +9,12 @@ trap 'echo "ERROR: init.sh failed at line $LINENO: \"$BASH_COMMAND\"" >&2' ERR
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "$SCRIPT_DIR/sitl_env.sh"
 
+echo "############################################################"
+echo "#  First-time setup takes about 20 minutes. Go grab a       #"
+echo "#  coffee.                                                  #"
+echo "############################################################"
+echo
+
 echo "==> Checking sudo access (several steps below need it to install packages)..."
 if ! sudo -v; then
     echo "ERROR: could not get sudo access. This is a local machine/policy issue," >&2
@@ -37,7 +43,21 @@ echo "==> [4/10] Installing MAVROS..."
 sudo apt-get install -y ros-humble-mavros ros-humble-mavros-extras ros-humble-mavros-msgs
 
 echo "==> [5/10] Installing MAVROS's GeographicLib datasets..."
+# Always force a fresh download - the upstream installer skips downloading
+# if a file named egm96-5* already exists, even a truncated leftover from a
+# previous failed/interrupted run (it only checks presence, not
+# completeness). That let a corrupt download go unnoticed here and instead
+# crash mavros_node/px4_telemetry_node later at runtime with "File has the
+# wrong length ... egm96-5.pgm" (seen in the wild on a fresh clone).
+GEOID_FILE="/usr/share/GeographicLib/geoids/egm96-5.pgm"
+sudo rm -f "$GEOID_FILE"
 curl -LsSf https://raw.githubusercontent.com/mavlink/mavros/ros2/mavros/scripts/install_geographiclib_datasets.sh | sudo bash
+GEOID_EXPECTED_SIZE=18671448  # confirmed against a known-good install
+if [[ "$(stat -c%s "$GEOID_FILE" 2>/dev/null || echo 0)" != "$GEOID_EXPECTED_SIZE" ]]; then
+    echo "ERROR: GeographicLib egm96-5 geoid dataset download failed or is incomplete." >&2
+    echo "  Check your network connection and re-run this script." >&2
+    exit 1
+fi
 
 echo "==> [6/10] Installing geodesy (needed by aero_common)..."
 sudo apt-get install -y ros-humble-geodesy

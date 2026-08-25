@@ -45,6 +45,7 @@ echo "[*] Killing any previous PX4 instance..."
 # dataman/logs/etc. land in the same place a `make` launch would put them.
 cd "$PX4_DIR/build/px4_sitl_default/rootfs"
 
+echo "[*] Usually takes about 20 seconds."
 launch_px4 0
 wait_for_ready 0
 

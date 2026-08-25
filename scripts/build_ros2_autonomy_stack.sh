@@ -12,6 +12,12 @@ require_dir "$ROS2_DIR/src/aero_common" "Error: ros2_ws/src/aero_common not foun
 
 echo "[*] Will not check if you have already installed ros2. Assumed installed."
 
+echo "############################################################"
+echo "#  First-time build takes about 5 minutes - mostly px4_msgs #"
+echo "#  generating its message bindings. Later re-builds (after  #"
+echo "#  editing an existing package) are much faster.            #"
+echo "############################################################"
+
 echo "[*] Building ros2_ws/src with colcon..."
 ( cd "$ROS2_DIR" && colcon build --symlink-install )
 

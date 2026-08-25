@@ -39,37 +39,40 @@ Will be installed by `init.sh`.
 ### Git LFS
 Will be installed by `init.sh`.
 
-## First-Time Setup
+## Building the SITL
+
+Run this once, right after cloning — it installs the prerequisites above,
+initializes all submodules (including PX4's own nested ones), and installs
+PX4's own SITL build dependencies into a project-local Python venv
+(`venv_host/`). Takes about 20 minutes, almost entirely spent installing
+PX4's own dependencies and building Micro-XRCE-DDS-Agent. Safe to re-run;
+if something fails, the error names the exact step and command, so just
+fix that and re-run:
 
 ```bash
 ./scripts/init.sh
 ```
 
-Installs above prequisites, initializes all submodules (including PX4's own nested submodules),
-and installs PX4's own SITL build dependencies (into a project-local Python venv, `venv_host/`).
-Safe to re-run. If something fails, the
-error names the exact step and command, so just fix that and re-run.
-
-## Building the SITL
-
-Rebuilds PX4 SITL from a clean state — re-run after changing anything under
-`px4-additions/`:
+Rebuilds PX4 SITL from a clean state (about 20 seconds) — re-run after
+changing anything under `px4-additions/`:
 
 ```bash
 ./scripts/build_px4.sh
 ```
 
 Builds every package under `ros2_ws/src` with `colcon` — re-run after
-changing anything there:
+changing anything there. About 5 minutes the first time (mostly `px4_msgs`
+generating its message bindings); much faster on later runs:
 
 ```bash
 ./scripts/build_ros2_autonomy_stack.sh
 ```
 
-| Script | Purpose |
-|---|---|
-| `scripts/build_px4.sh` | Syncs `px4-additions/` into `PX4-Autopilot/` and rebuilds PX4 SITL from a clean state. Run after changing anything under `px4-additions/`. |
-| `scripts/build_ros2_autonomy_stack.sh` | Builds every package under `ros2_ws/src` with `colcon`. Run after changing anything there or after cloning for the first time. |
+| Script | Purpose | Time |
+|---|---|---|
+| `scripts/init.sh` | One-time setup: installs prerequisites, submodules, PX4's SITL build deps. | ~20 min |
+| `scripts/build_px4.sh` | Syncs `px4-additions/` into `PX4-Autopilot/` and rebuilds PX4 SITL from a clean state. Run after changing anything under `px4-additions/`. | ~20 sec |
+| `scripts/build_ros2_autonomy_stack.sh` | Builds every package under `ros2_ws/src` with `colcon`. Run after changing anything there or after cloning for the first time. | ~5 min first time |
 
 ## Running the SITL
 
@@ -82,44 +85,45 @@ Each command below runs in the foreground and stays alive until you
 `Ctrl-C` it — run each in its own terminal, in order:
 
 Terminal 1 — launches a standalone Gazebo instance (no PX4 yet) and stays
-alive. Loading the world is the slow part, so run this once and leave it
+alive (about 5 seconds to load the world). Run this once and leave it
 running:
 
 ```bash
-./scripts/launch_gazebo.sh
+clear && ./scripts/launch_gazebo.sh
 ```
 
 Terminal 2 — once Gazebo is ready, spawns a single PX4 instance against it
-and stays alive. Re-run this any time you want to reset the vehicle's pose
-— it resets and re-attaches to the existing model rather than reloading the
-world. Refuses to run (with an explanatory error) if Gazebo isn't up yet,
-and if Gazebo quits out from under it (e.g. you `Ctrl-C` Terminal 1), it
-notices within a second and stops PX4 too rather than hanging:
+and stays alive (about 20 seconds). Re-run this any time you want to reset
+the vehicle's pose — it resets and re-attaches to the existing model rather
+than reloading the world. Refuses to run (with an explanatory error) if
+Gazebo isn't up yet, and if Gazebo quits out from under it (e.g. you
+`Ctrl-C` Terminal 1), it notices within a second and stops PX4 too rather
+than hanging:
 
 ```bash
-./scripts/launch_one_homebrew.sh
+clear &&  ./scripts/launch_one_homebrew.sh
 ```
 
 Terminal 3 — once PX4 is ready, launches minimal startup from the autonomy stack at `https://github.com/UFL-Autonomy-Park/aero_common`.
 
 ```bash
-./scripts/launch_ros2_autonomy_stack.sh
+clear &&  ./scripts/launch_ros2_autonomy_stack.sh
 ```
 
 To reset just the vehicle without restarting Gazebo, re-run Terminal 2's
-command (it does this automatically), or run this from any terminal, any
-time:
+command (it does this automatically), or run this from any terminal
+(about 10 seconds), any time:
 
 ```bash
 ./scripts/lib/kill_all_px4_instances.sh
 ```
 
-| Script | Purpose |
-|---|---|
-| `scripts/launch_gazebo.sh` | Launches a standalone Gazebo instance (no PX4). Run once; leave it running. |
-| `scripts/launch_one_homebrew.sh` | Spawns a single PX4 instance against an already-running Gazebo (errors if Gazebo isn't up yet). Re-run any time to reset the vehicle's pose — kills any previous PX4 instance, then resets and re-attaches to the existing model rather than recreating it. |
-| `scripts/lib/kill_all_px4_instances.sh` | Kills whatever PX4 instance `launch_one_homebrew.sh` last spawned (and any in-flight `apark_rise_controller` experiment riding on it), without touching Gazebo or the vehicle model. Safe to run any time. |
-| `scripts/launch_ros2_autonomy_stack.sh` | Launches MAVROS + the autonomy stack. Run after `scripts/launch_one_homebrew.sh`. |
+| Script | Purpose | Time |
+|---|---|---|
+| `scripts/launch_gazebo.sh` | Launches a standalone Gazebo instance (no PX4). Run once; leave it running. | ~5 sec |
+| `scripts/launch_one_homebrew.sh` | Spawns a single PX4 instance against an already-running Gazebo (errors if Gazebo isn't up yet). Re-run any time to reset the vehicle's pose — kills any previous PX4 instance, then resets and re-attaches to the existing model rather than recreating it. | ~20 sec |
+| `scripts/lib/kill_all_px4_instances.sh` | Kills whatever PX4 instance `launch_one_homebrew.sh` last spawned (and any in-flight `apark_rise_controller` experiment riding on it), without touching Gazebo or the vehicle model. Safe to run any time. | ~10 sec |
+| `scripts/launch_ros2_autonomy_stack.sh` | Launches MAVROS + the autonomy stack. Run after `scripts/launch_one_homebrew.sh`. | ~5 sec |
 
 ### Reference Code (`apark_rise_controller`)
 

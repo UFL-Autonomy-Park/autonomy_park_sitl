@@ -21,7 +21,7 @@
     r_udot: 0.0
     run_length_s: 60.0
     save_data: true
-    takeoff_timeout_s: 20.0
+    takeoff_timeout_s: 6.0
     theta_dot_bar: 1000.0
     traj1_alpha_warp: 0.5
     traj1_center_z_m_enu: 1.5

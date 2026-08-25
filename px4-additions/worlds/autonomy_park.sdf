@@ -802,7 +802,11 @@
       <world_frame_orientation>ENU</world_frame_orientation>
       <latitude_deg>29.628147</latitude_deg>
       <longitude_deg>-82.360333</longitude_deg>
-      <elevation>0.0</elevation>
+      <!-- Must match PX4_HOME_ALT (scripts/sitl_env.sh) and origin_z
+           (px4_telemetry/param/park_coordinates.yaml) - see sitl_env.sh's
+           PX4_HOME_ALT comment for why 29.2059, not 0.0 or the real park's
+           surveyed AMSL. -->
+      <elevation>29.2059</elevation>
       <heading_deg>-34.5031</heading_deg>
     </spherical_coordinates>
   </world>
