@@ -56,11 +56,6 @@ eggs/
 .eggs/
 lib/
 lib64/
-# Except our own scripts/lib/ (helper scripts, not build output) - the
-# generic Python-packaging lib/ rule above would otherwise silently untrack
-# anything new added there.
-!scripts/lib/
-!scripts/lib/**
 parts/
 sdist/
 var/
@@ -246,4 +241,11 @@ COLCON_IGNORE
 AMENT_IGNORE
 
 # End of https://www.toptal.com/developers/gitignore/api/ros2,python,c++
+
+# Except our own scripts/lib/ (helper scripts, not build output) - the
+# generic Python-packaging lib/ rule above would otherwise silently untrack
+# anything new added there.
+!scripts/lib/
+!scripts/lib/**
+simulation_data/
 

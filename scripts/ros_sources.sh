@@ -4,7 +4,7 @@
 # config every launched node uses - see README Troubleshooting for why
 # this specifically, not just any shell, matters for `ros2 topic echo` to
 # work) and ros2_ws/install/setup.bash (so `ros2` can see this workspace's
-# packages: aero_common, aviary_rise_controller, px4_msgs), in one step
+# packages: aero_common, apark_rise_controller, px4_msgs), in one step
 # instead of two commands to remember.
 #
 # Must be *sourced*, not executed: `source scripts/ros_sources.sh`.

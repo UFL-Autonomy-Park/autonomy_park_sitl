@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Runs a single aviary_rise_controller experiment against an already-running
+# Runs a single apark_rise_controller experiment against an already-running
 # MAVROS + autonomy stack (see scripts/launch_ros2_autonomy_stack.sh) and
 # PX4 SITL instance (see scripts/launch_one_homebrew.sh). Stays alive
 # for the length of one experiment (takeoff, trajectory, auto-land) -
@@ -7,7 +7,7 @@
 # by the node's own `finally` block, not by this script.
 #
 # Usage: scripts/launch_rise_controller.sh [param_file] [namespace]
-#   param_file - a filename under ros2_ws/src/aviary_rise_controller/param/
+#   param_file - a filename under ros2_ws/src/apark_rise_controller/param/
 #                (e.g. baseline_params_1.yaml), or a path to a YAML
 #                anywhere else. Defaults to baseline_params_1.yaml.
 #   namespace  - must match the namespace singleagent_homebrew_teleop.launch.py
@@ -24,12 +24,12 @@ NAMESPACE="${2:-homebrew_0}"
 # Bare filename -> resolve against this package's own param/ dir; anything
 # that already looks like a path (contains a '/') is used as-is.
 if [[ "$PARAM_FILE" != */* ]]; then
-    PARAM_FILE="$ROS2_DIR/src/aviary_rise_controller/param/$PARAM_FILE"
+    PARAM_FILE="$ROS2_DIR/src/apark_rise_controller/param/$PARAM_FILE"
 fi
 [[ -f "$PARAM_FILE" ]] || { echo "Error: param file '$PARAM_FILE' not found." >&2; exit 1; }
 
-require_dir "$ROS2_DIR/install/aviary_rise_controller" \
-    "Error: aviary_rise_controller isn't built. Run scripts/build_ros2_autonomy_stack.sh first."
+require_dir "$ROS2_DIR/install/apark_rise_controller" \
+    "Error: apark_rise_controller isn't built. Run scripts/build_ros2_autonomy_stack.sh first."
 
 if [[ ! -f /tmp/ros2_autonomy_stack.pid ]] || ! kill -0 "-$(cat /tmp/ros2_autonomy_stack.pid)" 2>/dev/null; then
     echo "Error: the ROS 2 autonomy stack isn't running." >&2
@@ -49,14 +49,14 @@ set -u
 pidfile="/tmp/rise_controller.pid"
 rm -f "$pidfile"
 
-echo "[*] Launching aviary_rise_controller (namespace=$NAMESPACE, params=$PARAM_FILE)..."
+echo "[*] Launching apark_rise_controller (namespace=$NAMESPACE, params=$PARAM_FILE)..."
 
-# setsid puts `ros2 launch` (and aviary_rise_node, spawned as its child) in a
+# setsid puts `ros2 launch` (and apark_rise_node, spawned as its child) in a
 # new session/process group, so kill_rise_controller.sh can kill exactly
 # this tree via its PGID - see launch_gazebo.sh's launch_px4() for why the
 # pidfile is written from inside the process itself rather than trusting `$!`.
 setsid bash -c 'echo $$ > "$1"; shift; exec "$@"' _ "$pidfile" \
-    ros2 launch aviary_rise_controller rise_controller.launch.py \
+    ros2 launch apark_rise_controller rise_controller.launch.py \
     "params_file:=$PARAM_FILE" \
     "namespace:=$NAMESPACE" &
 disown
@@ -77,5 +77,5 @@ trap '"$SCRIPT_DIR/lib/kill_rise_controller.sh"; exit 0' INT TERM
 while kill -0 "-$(cat "$pidfile" 2>/dev/null)" 2>/dev/null; do
     sleep 1
 done
-echo "[!] aviary_rise_controller exited (experiment finished, or it failed - check the output above)."
+echo "[!] apark_rise_controller exited (experiment finished, or it failed - check the output above)."
 rm -f "$pidfile"

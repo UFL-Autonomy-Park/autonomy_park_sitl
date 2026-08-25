@@ -23,8 +23,8 @@ jax.config.update("jax_enable_x64", True) # Use 64 bit since all floats to be us
 jax.config.update("jax_compilation_cache_dir", "/tmp/jax_cache")
 
 from jax_resnet import resnet_network
-from aviary_rise_controller.proj import discrete_projection, discrete_rate_projection
-from aviary_rise_controller.desired_trajectory import TrajectoryGenerator
+from apark_rise_controller.proj import discrete_projection, discrete_rate_projection
+from apark_rise_controller.desired_trajectory import TrajectoryGenerator
 
 class ExperimentState:
     STATE_INIT: int = 0
@@ -93,10 +93,10 @@ EXTERNAL_PARAM_NAMES: set = {
 # should be tuning per run.
 CONTROL_TICK_BUDGET_FRACTION: float = 0.90
 
-class AviaryRiseNode(Node):
+class AparkRiseNode(Node):
     def __init__(self) -> None:
         super().__init__(
-            node_name='aviary_rise_node',
+            node_name='apark_rise_node',
             allow_undeclared_parameters=True,
             automatically_declare_parameters_from_overrides=True
         )
@@ -233,7 +233,7 @@ class AviaryRiseNode(Node):
         self.in_offboard_mode: bool = False
 
         # Init
-        self.landing_command_sent: bool = False
+        self.terminal_command_sent: bool = False
         self.position_mode_requested: bool = False
         self._mode_cmd_seeded: bool = False
         self.cost_started: bool = False
@@ -492,10 +492,21 @@ class AviaryRiseNode(Node):
         self.setpoint_publisher.publish(msg)
 
     def land_vehicle(self) -> None:
-        if self.landing_command_sent:
+        if self.terminal_command_sent:
             return
         self._request_mode(mode="AUTO.LAND")
-        self.landing_command_sent = True
+        self.terminal_command_sent = True
+
+    def return_vehicle(self) -> None:
+        # AUTO.RTL: PX4's own return-to-launch mode - flies back to the
+        # home position (set at boot from PX4_HOME_LAT/LON/ALT, or the EKF
+        # origin if that was set explicitly after boot - see
+        # scripts/launch_one_homebrew.sh) and lands there automatically,
+        # rather than landing in place like land_vehicle() does.
+        if self.terminal_command_sent:
+            return
+        self._request_mode(mode="AUTO.RTL")
+        self.terminal_command_sent = True
 
     def write_csv(self) -> None:
         traj_name: str = ""
@@ -979,11 +990,13 @@ def main(args: Optional[List[str]] = None) -> None:
     gc.disable()
 
     rclpy.init(args=args)
-    node: AviaryRiseNode = AviaryRiseNode()
+    node: AparkRiseNode = AparkRiseNode()
+    experiment_succeeded: bool = False
     try:
         rclpy.spin(node=node)
     except ExperimentFinished as e:
         node.get_logger().info(f"Experiment terminated: {e}")
+        experiment_succeeded = True
     except KeyboardInterrupt:
         node.get_logger().info("Keyboard interrupt received.")
     except ValueError as e:
@@ -999,8 +1012,12 @@ def main(args: Optional[List[str]] = None) -> None:
     except ControlLoopOverrunError as e:
         node.get_logger().fatal(f"Control loop overrun: {e}")
     finally:
-        node.get_logger().info("Commanding vehicle to land.")
-        node.land_vehicle()
+        if experiment_succeeded:
+            node.get_logger().info("Commanding vehicle to return to launch.")
+            node.return_vehicle()
+        else:
+            node.get_logger().info("Commanding vehicle to land.")
+            node.land_vehicle()
         if rclpy.ok():
             if node.save_data:
                 node.get_logger().info("Saving telemetry data to CSV...")

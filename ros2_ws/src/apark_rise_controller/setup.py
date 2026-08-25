@@ -2,7 +2,7 @@ import os
 from glob import glob
 from setuptools import find_packages, setup
 
-package_name = 'aviary_rise_controller'
+package_name = 'apark_rise_controller'
 
 setup(
     name=package_name,
@@ -18,7 +18,7 @@ setup(
     zip_safe=True,
     maintainer='Max Gardenswartz',
     maintainer_email='mgardenswartz@ufl.edu',
-    description='Second-order RISE controller for the Aviary',
+    description='Second-order RISE controller for Autonomy Park',
     license='Apache-2.0',
     install_requires=[
         'setuptools',
@@ -30,7 +30,7 @@ setup(
     },
     entry_points={
         'console_scripts': [
-            'aviary_rise_controller = aviary_rise_controller.aviary_rise_node:main',
+            'apark_rise_controller = apark_rise_controller.apark_rise_node:main',
         ],
     },
 )

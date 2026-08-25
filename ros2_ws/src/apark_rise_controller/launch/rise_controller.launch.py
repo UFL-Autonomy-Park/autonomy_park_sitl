@@ -10,12 +10,12 @@ def generate_launch_description():
     # YAML, plus two files borrowed from aero_common so origin_r and the safety
     # envelope stay a single source of truth shared with px4_telemetry/px4_teleop/
     # px4_safety_lib instead of being duplicated (and drifting) here. See
-    # aviary_rise_node.py's EXTERNAL_PARAM_NAMES for the (unused-by-this-node) rest of
+    # apark_rise_node.py's EXTERNAL_PARAM_NAMES for the (unused-by-this-node) rest of
     # each of those two files' keys.
     params_file_arg = DeclareLaunchArgument(
         'params_file',
-        default_value=os.path.join(get_package_share_directory('aviary_rise_controller'), 'param', 'baseline_params_1.yaml'),
-        description='Controller-tuning YAML under aviary_rise_controller/param/.'
+        default_value=os.path.join(get_package_share_directory('apark_rise_controller'), 'param', 'baseline_params_1.yaml'),
+        description='Controller-tuning YAML under apark_rise_controller/param/.'
     )
     namespace_arg = DeclareLaunchArgument(
         'namespace',
@@ -23,10 +23,10 @@ def generate_launch_description():
         description='Must match the namespace MAVROS was launched under (see singleagent_homebrew_teleop.launch.py).'
     )
 
-    aviary_rise_node = Node(
-        package='aviary_rise_controller',
-        executable='aviary_rise_controller',
-        name='aviary_rise_node',
+    apark_rise_node = Node(
+        package='apark_rise_controller',
+        executable='apark_rise_controller',
+        name='apark_rise_node',
         namespace=LaunchConfiguration('namespace'),
         parameters=[
             LaunchConfiguration('params_file'),
@@ -36,4 +36,4 @@ def generate_launch_description():
         output='screen'
     )
 
-    return LaunchDescription([params_file_arg, namespace_arg, aviary_rise_node])
+    return LaunchDescription([params_file_arg, namespace_arg, apark_rise_node])
