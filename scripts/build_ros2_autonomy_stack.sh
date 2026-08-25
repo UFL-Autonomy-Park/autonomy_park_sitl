@@ -6,7 +6,7 @@
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-source "$SCRIPT_DIR/library/set_env.sh"
+source "$SCRIPT_DIR/sitl_env.sh"
 
 require_dir "$ROS2_DIR/src/aero_common" "Error: ros2_ws/src/aero_common not found. Run scripts/init.sh first."
 

@@ -1,9 +1,18 @@
 #!/usr/bin/env bash
-# Shared environment and helper functions for autonomy_park_sitl scripts.
-# Must be *sourced*, not executed: `source scripts/library/set_env.sh`.
+# Shared environment for autonomy_park_sitl scripts (project paths, PX4 SITL
+# config, ROS 2 DDS config, venv_host activation). Every launch_*.sh/build_*.sh
+# script sources this internally; you'll also want to source it directly and
+# ad hoc whenever you need `ros2` CLI visibility into the running SITL (see
+# README Troubleshooting) - or just source scripts/ros_sources.sh instead,
+# which does that plus ros2_ws/install/setup.bash in one step.
+# Must be *sourced*, not executed: `source scripts/sitl_env.sh`.
+#
+# Helper functions (process killing, PX4-instance management) deliberately
+# do NOT live here - see scripts/lib/process.sh and
+# scripts/lib/homebrew_instance.sh for why they're kept separate.
 
 if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
-    echo "Error: set_env.sh must be sourced, not executed." >&2
+    echo "Error: sitl_env.sh must be sourced, not executed." >&2
     echo "  Run: source ${BASH_SOURCE[0]}" >&2
     exit 1
 fi
@@ -67,12 +76,12 @@ export PX4_HOME_LAT=29.628147
 export PX4_HOME_LON=-82.360333
 export PX4_HOME_ALT=0.0
 
-# Custom Gazebo world/model, added via px4-additions/ (see library/write_px4_with_px4_additions.sh)
+# Custom Gazebo world/model, added via px4-additions/ (see lib/write_px4_with_px4_additions.sh)
 export PX4_GZ_WORLD=autonomy_park
 export PX4_SIMULATOR=gz
 export PX4_SIM_MODEL=gz_x500 # gz_ prefix required
 export PX4_SYS_AUTOSTART=22000
-export PX4_GZ_MODEL_POSE="3.0,0,0.5,0,0,0"
+export PX4_GZ_MODEL_POSE="0.0,0,0.5,0,0,0"
 
 # PX4's `make` config target (see build_px4.sh). Deliberately just
 # "px4_sitl", not "px4_sitl gz_homebrew_autonomy_park" - the gz_<model>_<world>

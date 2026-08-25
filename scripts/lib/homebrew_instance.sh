@@ -1,11 +1,10 @@
 #!/usr/bin/env bash
 # Shared functions for managing a single "homebrew" PX4/Gazebo vehicle
-# instance - used by both spawn_one_homebrew_instance.sh and
-# kill_all_px4_instances.sh, which is the only reason this lives apart
-# from either of them. Relies on PX4_* env vars set by library/set_env.sh,
-# so source that first: `source scripts/library/set_env.sh` then
-# `source scripts/library/homebrew_instance.sh`. Not meant to be run
-# directly.
+# instance - used by both launch_one_homebrew.sh and
+# lib/kill_all_px4_instances.sh, which is the only reason this lives apart
+# from either of them. Relies on PX4_* env vars set by sitl_env.sh, so
+# source that first: `source scripts/sitl_env.sh` then
+# `source scripts/lib/homebrew_instance.sh`. Not meant to be run directly.
 
 # Resolved from this file's own location (not the caller's SCRIPT_DIR, which
 # may point elsewhere) so zero_rotor_commands.py is found regardless of who
@@ -129,7 +128,7 @@ launch_px4() {
     # bound instead of settling down after startup.
 
     # setsid puts px4 in a new session/process group, so
-    # kill_pidfile_group (see library/process.sh) can kill exactly this
+    # kill_pidfile_group (see lib/process.sh) can kill exactly this
     # process via its PGID instead of pattern-matching process names
     # system-wide - it will NOT include Gazebo, since spawn_one_homebrew_
     # instance.sh refuses to run unless Gazebo is already up on its own.

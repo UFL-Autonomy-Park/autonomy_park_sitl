@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
 # Launches a standalone Gazebo instance against the custom world defined in
-# px4-additions/ (see library/write_px4_with_px4_additions.sh to sync it
-# into PX4-Autopilot first, and library/set_env.sh for the env vars used
+# px4-additions/ (see lib/write_px4_with_px4_additions.sh to sync it
+# into PX4-Autopilot first, and sitl_env.sh for the env vars used
 # below). Does NOT launch any PX4 instance - run this once, leave it
-# running, and use spawn_one_homebrew_instance.sh (repeatedly, if needed) to
+# running, and use launch_one_homebrew.sh (repeatedly, if needed) to
 # add/reset a vehicle in it. Kept separate because loading the world is slow
 # but relaunching PX4 is not, and PX4 (correctly) crashes its own EKF if you
 # teleport its rigid body mid-run - resetting the drone's pose means
@@ -13,7 +13,7 @@
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-source "$SCRIPT_DIR/library/set_env.sh"
+source "$SCRIPT_DIR/sitl_env.sh"
 
 require_dir "$PX4_DIR/build/px4_sitl_default" "Error: no PX4 SITL build found. Run scripts/build_px4.sh first."
 
@@ -30,7 +30,7 @@ WORLD_SDF="$PX4_GZ_WORLDS/$PX4_GZ_WORLD.sdf"
 [[ -f "$WORLD_SDF" ]] || { echo "Error: world file '$WORLD_SDF' not found." >&2; exit 1; }
 
 echo "[*] Killing any leftover Gazebo processes..."
-"$SCRIPT_DIR/library/kill_gazebo.sh"
+"$SCRIPT_DIR/lib/kill_gazebo.sh"
 
 pidfile="/tmp/gz_sim.pid"
 logfile="/tmp/gz_sim.log"
@@ -39,8 +39,8 @@ rm -f "$pidfile"
 echo "[*] Launching Gazebo (world=$PX4_GZ_WORLD)..."
 
 # setsid puts the server (and the gui client spawned alongside it) in a new
-# session/process group, so library/kill_gazebo.sh can kill exactly this
-# tree via its PGID - see spawn_one_homebrew_instance.sh's launch_px4() for
+# session/process group, so lib/kill_gazebo.sh can kill exactly this
+# tree via its PGID - see launch_one_homebrew.sh's launch_px4() for
 # why the pidfile is written from inside the process itself rather than
 # trusting `$!`.
 setsid bash -c '
@@ -65,7 +65,7 @@ echo "PID: $(cat "$pidfile" 2>/dev/null || echo "unknown - check $pidfile")"
 
 # Poll the same "/world/<world>/scene/info" service PX4 itself waits on
 # before attaching (see PX4-Autopilot's px4-rc.gzsim) - once it responds,
-# the world is fully loaded and spawn_one_homebrew_instance.sh can attach.
+# the world is fully loaded and launch_one_homebrew.sh can attach.
 echo "[*] Waiting for the world to be ready..."
 ATTEMPTS=30
 while (( ATTEMPTS > 0 )); do
@@ -85,7 +85,7 @@ done
 # child of this shell - Ctrl-C here won't reach it on its own, and a bare
 # `wait` would return immediately instead of blocking on it. Trap the
 # interrupt and clean up explicitly instead.
-trap '"$SCRIPT_DIR/library/kill_gazebo.sh"; exit 0' INT TERM
+trap '"$SCRIPT_DIR/lib/kill_gazebo.sh"; exit 0' INT TERM
 
 while kill -0 "-$(cat "$pidfile" 2>/dev/null)" 2>/dev/null; do
     sleep 1

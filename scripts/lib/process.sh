@@ -3,7 +3,7 @@
 # standalone (does NOT source set_env.sh) so scripts that want to stay
 # dependency-free - safe to run even mid-setup, without paying for
 # set_env.sh's venv creation/activation - can just source this one function
-# instead. Source directly: `source scripts/library/process.sh`.
+# instead. Source directly: `source scripts/lib/process.sh`.
 
 # kill_pidfile_group PIDFILE [LABEL] - sends SIGTERM (escalating to SIGKILL
 # after ~5s) to the process GROUP led by the PID recorded in PIDFILE, then

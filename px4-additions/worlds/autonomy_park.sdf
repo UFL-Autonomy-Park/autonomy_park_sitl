@@ -216,54 +216,12 @@
       <pose>0 0 0 0 0 0</pose>
       <link name='link'>
         <collision name='collision'>
-          <!-- Same heightmap data as the visual below (not a hand-made
-               proxy mesh) - native heightmap collision uses dedicated
-               heightfield collision math instead of generic mesh GJK/EPA,
-               so it matches the rendered terrain exactly and has no hard
-               seams for a landing-gear box to catch on. A hand-authored
-               low-poly frustum was tried first (see worlds/scripts/
-               generate_hill.py's git history) and reliably stuck the
-               landing gear on the hill's sloped sides - the seams between
-               its few large flat faces.
-
-               The XY offset is on THIS <pose>, not inside <heightmap><pos>
-               below (unlike the visual, where <pos> is what's used) -
-               verified empirically: with the offset left inside <pos> as
-               for the visual, DART-Bullet's heightfield collision silently
-               centered itself at world (0,0) instead, ignoring it (a
-               vehicle over the hill's real position fell straight through
-               to the flat ground_plane below; one placed over world origin
-               instead settled at the plateau's full height). The old
-               mesh-based collision got this right by using <collision>'s
-               own <pose> for the same reason - physics collision shapes
-               generally expect to be positioned via the link/collision
-               pose, not a geometry-internal offset.
-
-               Z is 0.03, not 0 (and not the visual's imperceptible 0.001,
-               which only needs to beat z-fighting) - the heightmap's own
-               edge pixels are exactly 0, i.e. exactly coincident with
-               ground_plane's flat collision at z=0 across the hill's
-               entire footprint. Two independent static collision shapes
-               occupying literally the same space there, not just visually
-               overlapping but physically coincident, produced contradictory
-               contact resolution right at that boundary: a vehicle resting
-               near the hill's edge got violently launched (observed: shot
-               up to z~1.1 and landed upside-down) instead of just resting,
-               and even settling-but-tilted "stuck" cases only ever happened
-               within about a vehicle-radius of this same boundary - never
-               deep in the interior, never on open flat ground.  Lifting the
-               heightfield's own baseline (including its zero-height edges)
-               a real, physics-relevant amount above ground_plane means
-               nothing within the hill's footprint can ever be coincident
-               with ground_plane's surface again - gravity settles anything
-               there onto the (now unambiguously higher) heightfield only,
-               with ground_plane only relevant outside the footprint where
-               no heightfield collision exists at all. -->
           <pose>-12.9456 3.644 0.03 0 0 0</pose>
           <geometry>
             <heightmap>
               <uri>materials/textures/hill_heightmap.png</uri>
               <size>18.0 12.0 0.75</size>
+              <!--Measured on Google Earth. Height is an educated guess.-->
             </heightmap>
           </geometry>
         </collision>
@@ -272,6 +230,7 @@
             <heightmap>
               <uri>materials/textures/hill_heightmap.png</uri>
               <size>18.0 12.0 0.75</size>
+              <!--Measured on Google Earth. Height is an educated guess.-->
               <pos>-12.9456 3.644 0.001</pos>
               <texture>
                 <diffuse>materials/textures/sparse_ground_foliage_texture.jpg</diffuse>

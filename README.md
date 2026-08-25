@@ -1,6 +1,7 @@
-# autonomy_park_sitl
+# Autonomy Park SITL
 
-![Screenshot of UF Autonomy Park in Gazebo](images/autonomy_park_sitl.png)
+<img src="pictures/autonomy_park_sitl.png" width="960">
+
 
 Gazebo Harmonic SITL with custom "Homebrew" quadcopter models, flying in a
 model of the UF Autonomy Park, on PX4 v1.16.2 with a ROS 2 Humble bridge.
@@ -32,7 +33,7 @@ Install per <https://gazebosim.org/docs/harmonic/install_ubuntu/> (`gz sim`,
 tested with 8.15.0). **NOT** installed by `init.sh`.
 
 ### MAVROS
-Will be installed by `init.sh`.
+Will be installed by `init.sh` (tested with 2.15.0).
 
 ### geodesy
 Will be installed by `init.sh`.
@@ -40,7 +41,7 @@ Will be installed by `init.sh`.
 ### Git LFS
 Will be installed by `init.sh`.
 
-## One-time setup
+## First-Time Setup
 
 ```bash
 ./scripts/init.sh
@@ -120,7 +121,7 @@ time:
 | `scripts/kill_all_px4_instances.sh` | Kills whatever PX4 instance `spawn_one_homebrew_instance.sh` last spawned, without touching Gazebo or the vehicle model. Safe to run any time. |
 | `scripts/launch_ros2_autonomy_stack.sh` | Launches MAVROS + the autonomy stack . Run after `scripts/spawn_one_homebrew_instance.sh`. |
 
-## Custom assets (`px4-additions/`)
+## Custom Assets (`px4-additions/`)
 
 - `models/homebrew/` — the flight model: includes `homebrew_base` plus
   sensor plugins (`LW20` downward LiDAR, `OakD-Lite` depth camera represening
@@ -133,6 +134,21 @@ time:
   `PX4-Autopilot/ROMFS/px4fmu_common/init.d-posix/airframes/CMakeLists.txt`).
 - `worlds/autonomy_park.sdf` (+ `worlds/materials/`) — the UF Autonomy Park
   world, textures tracked via Git LFS.
+
+## Customization
+Most simulation tweaks occur by changing variables in `scripts/library/set_env.sh` or by editing files in `px4-additions` and rebuilding PX4.
+
+### Physical Model Changes
+The variable `PX4_SIM_MODEL` dictates the physical and aesthetic model used for the quadcopter. Whatever the quadcopter model name is, you must pretend `gz_` to `PX4_SIM_MODEL`. For example, to use the `x500` model, write `gz_x500`.
+
+### PX4 Parameter Changes
+The variable `PX4_SYS_AUTOSTART` dictates the set of parameters PX4 uses. These parameters are listed in `px4-additions` (e.g., `22000_gz_homebrew`). Note that anything past the 5-digit prefix number is a purely aesthetic label and doesn't need to be set anywhere or match the physical model used. If a parameter is not specified in this file, that means it uses the default for the given PX4 version (1.16.2) for a quadrotor.
+
+### Spawn Location/Pose
+The PX4_GZ_MODEL_POSE number that dictates the set of parameters PX4 uses is specified in `scripts/library/set_env.sh`. Easier automation for this will come in a future update.
+
+### Multiple Agents
+Multi-agent simulation is not yet supported. Feel free to fork and put in a PR though.
 
 ## Troubleshooting
 
@@ -149,8 +165,8 @@ you need to ensure the `ros2` daemon uses the config in `scripts/library/set_env
 
 > [!IMPORTANT]
 > When respawning a PX4 instance (e.g., `spawn_one_homebrew_instance.sh`),
-you much re-launch your autonomy stack (e.g., ` bash launch_ros2_autonomy_stack.sh`)
+you much re-launch your autonomy stack (e.g., `launch_ros2_autonomy_stack.sh`)
 
 > [!WARNING]
 > Avoid landing on the hill. Despite extensive debugging, the quadcopter can get stuck in the ground
-> and will not be able to takeoff again. Taking off a fresh model from ground level is okay.
+> and may not be able to takeoff again. Taking off a freshly-spawned model from ordinary ground level is usually fine.

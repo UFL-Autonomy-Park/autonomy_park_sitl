@@ -7,7 +7,7 @@ set -euo pipefail
 trap 'echo "ERROR: init.sh failed at line $LINENO: \"$BASH_COMMAND\"" >&2' ERR
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-source "$SCRIPT_DIR/library/set_env.sh"
+source "$SCRIPT_DIR/sitl_env.sh"
 
 echo "==> Checking sudo access (several steps below need it to install packages)..."
 if ! sudo -v; then

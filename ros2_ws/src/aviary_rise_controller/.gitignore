@@ -1,42 +1,5 @@
-# Created by https://www.toptal.com/developers/gitignore/api/ros2,python,c++
-# Edit at https://www.toptal.com/developers/gitignore?templates=ros2,python,c++
-
-### C++ ###
-# Prerequisites
-*.d
-
-# Compiled Object files
-*.slo
-*.lo
-*.o
-# *.obj deliberately excluded from this pattern: this project never produces
-# MSVC-style .obj files (Linux/Makefile builds only emit .o), and a blanket
-# *.obj rule was silently gitignoring px4-additions/worlds/meshes/*.obj
-# (Wavefront mesh files), which is why they never made it into the repo.
-
-# Precompiled Headers
-*.gch
-*.pch
-
-# Compiled Dynamic libraries
-*.so
-*.dylib
-*.dll
-
-# Fortran module files
-*.mod
-*.smod
-
-# Compiled Static libraries
-*.lai
-*.la
-*.a
-*.lib
-
-# Executables
-*.exe
-*.out
-*.app
+# Created by https://www.toptal.com/developers/gitignore/api/python,ros2
+# Edit at https://www.toptal.com/developers/gitignore?templates=python,ros2
 
 ### Python ###
 # Byte-compiled / optimized / DLL files
@@ -45,6 +8,7 @@ __pycache__/
 *$py.class
 
 # C extensions
+*.so
 
 # Distribution / packaging
 .Python
@@ -56,11 +20,6 @@ eggs/
 .eggs/
 lib/
 lib64/
-# Except our own scripts/lib/ (helper scripts, not build output) - the
-# generic Python-packaging lib/ rule above would otherwise silently untrack
-# anything new added there.
-!scripts/lib/
-!scripts/lib/**
 parts/
 sdist/
 var/
@@ -169,7 +128,6 @@ celerybeat.pid
 .venv
 env/
 venv/
-venv_host/
 ENV/
 env.bak/
 venv.bak/
@@ -245,5 +203,5 @@ qtcreator-*
 COLCON_IGNORE
 AMENT_IGNORE
 
-# End of https://www.toptal.com/developers/gitignore/api/ros2,python,c++
+# End of https://www.toptal.com/developers/gitignore/api/python,ros2
 

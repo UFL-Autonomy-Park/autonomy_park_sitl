@@ -70,8 +70,7 @@ param set-default NAV_DLL_ACT 0      # disable need for QGC in SITL; otherwise P
 # real quad - GPS altitude and barometer are both unreliable at the Park.
 # Requires aero_common's px4_telemetry to publish an EKF global origin at
 # startup (gp_origin_publisher_); without it, AUTO_MISSION/AUTO_LOITER/AUTO_RTL
-# get rejected for invalid global position. See aero_common's git history for
-# the writeup on this.
+# get rejected for invalid global position.
 param set-default EKF2_HGT_REF 2
 
 # ── Real-World Parity (failsafes) ───────────────────────────────────────────
@@ -80,6 +79,9 @@ param set-default COM_OBL_RC_ACT 4
 param set-default COM_OF_LOSS_T 1.0
 param set-default GF_ACTION 5
 param set-default NAV_RCL_ACT 3
+
+# ── Return Mode ───────────────────────────────────────────
+param set-default RTL_DESCEND_ALT 1.5
 
 # ── Misc ─────────────────────────────────────────────────────────────────────
 param set-default MPC_THR_HOVER 0.60 # hover throttle (left default; never tuned per-vehicle)

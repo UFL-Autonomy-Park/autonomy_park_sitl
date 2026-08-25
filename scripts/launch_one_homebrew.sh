@@ -1,30 +1,28 @@
 #!/usr/bin/env bash
-# Spawns a single PX4 instance (instance 0) against an already-running
-# Gazebo world (see scripts/launch_gazebo.sh), attaching to it rather than
-# launching a new one. Re-run this any time you want to reset the vehicle's
-# pose - it kills any previous instance first (see
-# kill_all_px4_instances.sh, which also resets the model to a clean
-# resting pose), then attaches a fresh PX4 to it. Teleporting a running
-# PX4's rigid body crashes its EKF (a PX4 limitation, not fixable from
-# here), so a full PX4 restart is the only way to reset pose - this script
-# makes that restart cheap by never touching the (slow-to-load) Gazebo
-# world itself.
+# Kills any previous PX4 instance, resets the vehicle's pose if its model
+# already exists in Gazebo, then (re)launches a single PX4 instance
+# (instance 0) against an already-running Gazebo world (see
+# scripts/launch_gazebo.sh). Re-run this any time you want to reset the
+# vehicle's pose. Teleporting a running PX4's rigid body crashes its EKF (a
+# PX4 limitation, not fixable from here), so a full PX4 restart is the only
+# way to reset pose - this script makes that restart cheap by never
+# touching the (slow-to-load) Gazebo world itself.
 #
 # On the very first run against a given Gazebo instance, no model exists
 # yet, so this spawns one (PX4's normal path). On every run after that, the
 # model from the previous run is still sitting in Gazebo, already reset by
-# kill_all_px4_instances.sh above - deliberately not removed, see that
+# lib/kill_all_px4_instances.sh below - deliberately not removed, see that
 # script for why - so this attaches PX4 to the existing model
 # (`PX4_GZ_MODEL_NAME`) rather than spawning a new one. See
-# library/homebrew_instance.sh for both halves of this (launch_px4).
+# lib/homebrew_instance.sh for both halves of this (launch_px4).
 #
 # To reset the EKF origin manually after launch:
 #   $PX4_DIR/build/px4_sitl_default/bin/px4-commander set_ekf_origin <lat> <lon> <alt>
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-source "$SCRIPT_DIR/library/set_env.sh"
-source "$SCRIPT_DIR/library/homebrew_instance.sh"
+source "$SCRIPT_DIR/sitl_env.sh"
+source "$SCRIPT_DIR/lib/homebrew_instance.sh"
 
 require_dir "$PX4_DIR/build/px4_sitl_default" "Error: no PX4 SITL build found. Run scripts/build_px4.sh first."
 
@@ -39,7 +37,7 @@ if ! gz service -i --service "/world/$PX4_GZ_WORLD/scene/info" 2>&1 | grep -q "S
 fi
 
 echo "[*] Killing any previous PX4 instance..."
-"$SCRIPT_DIR/kill_all_px4_instances.sh"
+"$SCRIPT_DIR/lib/kill_all_px4_instances.sh"
 
 # --- Launch sequence ---
 
@@ -56,9 +54,20 @@ echo "[+] PX4 instance 0 is ready! Ctrl-C to stop (Gazebo keeps running)."
 # a child of this shell - Ctrl-C here won't reach it on its own, and a bare
 # `wait` would return immediately instead of blocking on it. Trap the
 # interrupt and clean up explicitly instead.
-trap '"$SCRIPT_DIR/kill_all_px4_instances.sh"; exit 0' INT TERM
+trap '"$SCRIPT_DIR/lib/kill_all_px4_instances.sh"; exit 0' INT TERM
 
 while kill -0 "-$(cat /tmp/px4_instance_0.pid 2>/dev/null)" 2>/dev/null; do
+    # PX4 itself doesn't notice Gazebo is gone right away - it sits waiting
+    # on its lockstep connection until its own internal timeout finally
+    # kills it, so without this check the user just sees this script hang
+    # for a while after Ctrl-C'ing launch_gazebo.sh's terminal, then the
+    # generic "exited unexpectedly" message below. Checking Gazebo's own
+    # pidfile catches it within one poll interval instead.
+    if ! kill -0 "-$(cat /tmp/gz_sim.pid 2>/dev/null)" 2>/dev/null; then
+        echo "[!] Gazebo has already quit. Stopping PX4 instance 0 too." >&2
+        "$SCRIPT_DIR/lib/kill_all_px4_instances.sh"
+        exit 1
+    fi
     sleep 1
 done
 echo "[!] PX4 instance 0 exited unexpectedly. Check /tmp/px4_instance_0.log" >&2

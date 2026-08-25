@@ -6,7 +6,7 @@
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-source "$SCRIPT_DIR/set_env.sh"
+source "$SCRIPT_DIR/../sitl_env.sh"
 
 require_dir "$PX4_ADDITIONS_DIR"
 require_dir "$PX4_DIR" "Error: PX4-Autopilot directory '$PX4_DIR' not found. Run scripts/init.sh first."
@@ -14,7 +14,7 @@ require_dir "$PX4_DIR" "Error: PX4-Autopilot directory '$PX4_DIR' not found. Run
 echo "Project Root: $PROJECT_ROOT"
 echo "Copying additions from $PX4_ADDITIONS_DIR to $PX4_DIR..."
 
-# copy_contents() is defined in set_env.sh
+# copy_contents() is defined in sitl_env.sh
 
 # 1. Gazebo simulation models -> PX4-Autopilot/Tools/simulation/gz/models/
 copy_contents "$PX4_ADDITIONS_DIR/models" "$PX4_DIR/Tools/simulation/gz/models"
