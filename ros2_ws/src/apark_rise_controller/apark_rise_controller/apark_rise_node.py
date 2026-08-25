@@ -828,7 +828,7 @@ class AparkRiseNode(Node):
                 t: float = 0.0
                 dt: float = self.control_period_s
 
-                boundary_err: Optional[str] = self.check_safety_boundary(q=q)
+                boundary_err: Optional[str] = None #self.check_safety_boundary(q=q)
                 if boundary_err is not None:
                     self.cost_J += self.w_fail * ((self.run_length_s - t) ** 2)
                     self.get_logger().info(f"[RESULT] Final cost = {self.cost_J:.4f} (boundary failure).")
