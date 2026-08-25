@@ -2,10 +2,7 @@
 
 <img src="pictures/autonomy_park_sitl.png" width="960">
 
-
-Gazebo Harmonic SITL with custom "Homebrew" quadcopter models, flying in a
-model of the UF Autonomy Park, on PX4 v1.16.2 with a ROS 2 Humble bridge.
-
+Gazebo Harmonic SITL with custom SDFs of the Homebrew quadcopters and of the UF Autonomy Park. Homebrews run PX4 v1.16.2 with a ROS 2 Humble bridge.
 
 ## Layout
 
@@ -127,7 +124,7 @@ time:
 ### Reference Code (`apark_rise_controller`)
 
 Once Terminals 1–3 above are all up, run a single RISE controller experiment
-(takeoff, tracks a trajectory, then lands) in its own terminal:
+(takeoff, tracks a trajectory, then lands) in its own terminal (Terminal 4)
 
 ```bash
 ./scripts/launch_rise_controller.sh
@@ -159,7 +156,7 @@ The variable `PX4_SIM_MODEL` dictates the physical and aesthetic model used for 
 The variable `PX4_SYS_AUTOSTART` dictates the set of parameters PX4 uses. These parameters are listed in `px4-additions` (e.g., `22000_gz_homebrew`). Note that anything past the 5-digit prefix number is a purely aesthetic label and doesn't need to be set anywhere or match the physical model used. If a parameter is not specified in this file, that means it uses the default for the given PX4 version (1.16.2) for a quadrotor.
 
 ### Spawn Location/Pose
-The PX4_GZ_MODEL_POSE number that dictates the set of parameters PX4 uses is specified in `scripts/sitl_env.sh`. Easier automation for this will come in a future update.
+The variable `PX4_GZ_MODEL_POSE` dictates the set of parameters PX4 uses is specified in `scripts/sitl_env.sh`. Easier automation for this will come in a future update.
 
 ### Multiple Agents
 Multi-agent simulation is not yet supported. Feel free to fork and put in a PR though.
@@ -240,6 +237,7 @@ in alongside it:
      launch, rather than duplicating those values, so it stays in sync
      with `aero_common`'s own idea of the world bounds and safety
      envelope.
+   - It uses acceleration-level control.
 3. `scripts/launch_rise_controller.sh` + `scripts/lib/kill_rise_controller.sh`
    are a template for a long-running experiment script, not something
    specific to `apark_rise_controller` — the `setsid` + pidfile + trap
