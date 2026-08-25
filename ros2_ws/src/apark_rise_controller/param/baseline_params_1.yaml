@@ -11,6 +11,7 @@
     k_2: 0.11
     k_3: 2.4
     k_rise: 0.5
+    arm_timeout_s: 10.0
     mode_cmd_retry_period_s: 1.0
     mpc_acc_hor_max_mps2: 6.0
     mpc_acc_vert_max_mps2: 6.0

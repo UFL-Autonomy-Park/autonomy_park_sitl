@@ -152,6 +152,7 @@ class AparkRiseNode(Node):
         self.odom_watchdog_freq_hz: float = self._get_param(name='odom_watchdog_freq_hz')
         self.mode_cmd_retry_period_s: float = self._get_param(name='mode_cmd_retry_period_s')
         self.takeoff_timeout_s: float = self._get_param(name='takeoff_timeout_s')
+        self.arm_timeout_s: float = self._get_param(name='arm_timeout_s')
 
         self._validate_trajectory_envelope()
 
@@ -252,6 +253,9 @@ class AparkRiseNode(Node):
         self.last_t_s: float = 0.0
         self.last_mode_cmd_time_s: float = 0.0
         self.takeoff_entry_time_s: float = 0.0
+        # ROS clock, not time.perf_counter() -- matches current_timestamp_s in
+        # _control_timer_tick(), which this is compared against below.
+        self.init_entry_time_s: float = self.get_clock().now().nanoseconds / 1e9
 
         self.ticks_without_pose: int = 0
         self.ticks_without_velocity: int = 0
@@ -752,6 +756,11 @@ class AparkRiseNode(Node):
         match self.experiment_state:
             case ExperimentState.STATE_INIT:
                 self.cost_started = False
+
+                if (current_timestamp_s - self.init_entry_time_s) > self.arm_timeout_s:
+                    self.cost_J += self.w_fail * (self.run_length_s ** 2)
+                    self.get_logger().info(f"[RESULT] Final cost = {self.cost_J:.4f} (arm timeout).")
+                    raise FailsafeTriggeredError("Failed to arm and enter OFFBOARD within timeout.")
 
                 # Always stream setpoints in INIT: continuous setpoint_raw/local publishing
                 # is itself what keeps PX4 willing to accept/hold OFFBOARD over MAVROS --
