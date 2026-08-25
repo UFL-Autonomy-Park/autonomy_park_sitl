@@ -76,7 +76,14 @@
       name="gz::sim::systems::MotorFailureSystem">
     </plugin>-->
 
-    <!-- Downward optical flow, offsets copied from x500_flow (same relative mount as x500) -->
+    <!-- Downward optical flow and lidar disabled (2026-08-25): both were
+    fighting the GPS+baro height estimate (EKF2_RNG_CTRL forcing range as
+    an always-on height source caused repeated large local-z jumps/resets
+    in SITL testing). Commented out rather than deleted so they can be
+    restored later once the underlying EKF height-source fusion is sorted
+    out. See px4-additions/params/22000_gz_homebrew's Height Estimation
+    section for the matching EKF2_* param changes. -->
+    <!--
     <include merge='true'>
       <uri>model://optical_flow</uri>
       <pose relative_to="base_link">0.03 0 -0.1 0 0 0</pose>
@@ -87,7 +94,6 @@
       <pose relative_to="base_link">0 0 -0.1 0 1.5707 0</pose>
     </joint>
 
-    <!-- Downward lidar for altitude estimation, offsets copied from x500_lidar_down / x500_flow -->
     <include merge='true'>
       <uri>model://LW20</uri>
       <pose relative_to="base_link">0 0 -0.079 0 1.57 0</pose>
@@ -142,6 +148,7 @@
         <visualize>true</visualize>
       </sensor>
     </link>
+    -->
 
     <!-- ZED 2 stand-in: no ZED 2 gz model exists yet, reusing OakD-Lite's RGB + depth_camera sensors (x500_depth's pattern/pose) -->
     <include merge='true'>

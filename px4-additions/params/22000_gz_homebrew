@@ -66,13 +66,19 @@ param set-default NAV_DLL_ACT 0      # disable need for QGC in SITL; otherwise P
 # real Homebrew quad has NAV_DLL_ACT=3 (RTL on datalink loss); left at 0 here deliberately.
 
 # ── Height Estimation ───────────────────────────────────────────────────────
-# Range (downward LW20 lidar) as the primary height reference, matching the
-# real quad - GPS altitude and barometer are both unreliable at the Park.
-# Requires aero_common's px4_telemetry to publish an EKF global origin at
-# startup (gp_origin_publisher_); without it, AUTO_MISSION/AUTO_LOITER/AUTO_RTL
-# get rejected for invalid global position.
-param set-default EKF2_HGT_REF 2
-
+# 2026-08-25: lidar (LW20) and optical flow ripped out of the SDF (see
+# homebrew/model.sdf) - EKF2_RNG_CTRL 2 forced range to *always* be fused
+# for height (the "2 = conditional" comment below was wrong; per PX4's own
+# params_range_finder.yaml, 1 is conditional and 2 is unconditional/always),
+# and that was the source of repeated large local-z jumps/resets in SITL.
+# Going back to firmware defaults instead: EKF2_HGT_REF=1 (GPS), and
+# EKF2_GPS_CTRL/EKF2_BARO_CTRL left unset so their defaults (7 and 1,
+# respectively) apply - GPS altitude + barometer both fused for height.
+# All lines below commented out rather than deleted so this is easy to
+# revert once the collision/height-estimation interplay is sorted out.
+#
+# param set-default EKF2_HGT_REF 2
+#
 # EKF2_GPS_CTRL bit 1 = GPS altitude fusion. Left ON by default (bitmask 7 =
 # lon/lat + altitude + velocity), which lets GPS become EKF2's active height
 # reference behind our backs: checkHeightSensorRefFallback() in EKF2 locks
@@ -86,31 +92,33 @@ param set-default EKF2_HGT_REF 2
 # bit 1 (5 = lon/lat + velocity, no altitude) makes GPS structurally
 # ineligible for height, same spirit as SENS_EN_BAROSIM 0 above: never trust
 # GPS/baro for the vertical estimate, only ever range.
-param set-default EKF2_GPS_CTRL 5
-
-# EKF2_RNG_CTRL 2 = "conditional": range is fused for height whenever a
-# valid downward-facing distance sensor is present, independent of
-# EKF2_HGT_REF above (matches the real quad's params, homebrew_1_16_2.params).
-param set-default EKF2_RNG_CTRL 2
-
+# param set-default EKF2_GPS_CTRL 5
+#
+# EKF2_RNG_CTRL 2 = "Enabled" (unconditional/always fused), NOT conditional
+# as this comment used to claim - see params_range_finder.yaml (1 =
+# conditional, 2 = always). Matched the real quad's params
+# (homebrew_1_16_2.params), but with the lidar sensor gone this has no
+# distance_sensor to fuse anyway.
+# param set-default EKF2_RNG_CTRL 2
+#
 # Real quad's measured LW20 mount offset (metres, FRD, from IMU) - lever-arm
 # correction for range-height fusion. Never previously copied into this file
 # or the SDF; the sim's LW20 mount pose still needs to be checked/fixed
 # separately for the *rotation* PX4's gz bridge requires (must be tagged
 # ROTATION_DOWNWARD_FACING - see GZBridge.cpp's laserScantoLidarSensorCallback
 # - or EKF2 will never select it for range fusion regardless of this offset).
-param set-default EKF2_RNG_POS_X -0.00635
-param set-default EKF2_RNG_POS_Y 0.0539
-param set-default EKF2_RNG_POS_Z 0.114
-
+# param set-default EKF2_RNG_POS_X -0.00635
+# param set-default EKF2_RNG_POS_Y 0.0539
+# param set-default EKF2_RNG_POS_Z 0.114
+#
 # Optical flow fusion + real quad's measured mount offset (metres, FRD, from
 # IMU), from homebrew_1_16_2.params. Requires the optical_flow model's mount
 # pose in the SDF to also be correct for PX4 to accept its measurements -
 # not yet verified, same caveat as the rangefinder above.
-param set-default EKF2_OF_CTRL 1
-param set-default EKF2_OF_POS_X 0.04440
-param set-default EKF2_OF_POS_Y 0.06670
-param set-default EKF2_OF_POS_Z 0.05080
+# param set-default EKF2_OF_CTRL 1
+# param set-default EKF2_OF_POS_X 0.04440
+# param set-default EKF2_OF_POS_Y 0.06670
+# param set-default EKF2_OF_POS_Z 0.05080
 
 # ── Real-World Parity (failsafes) ───────────────────────────────────────────
 param set-default COM_RC_IN_MODE 3

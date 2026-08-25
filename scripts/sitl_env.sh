@@ -74,28 +74,12 @@ copy_contents() {
 # Set by Max Gardenswartz (required changing since the old one was not perfectly centered on the park)
 export PX4_HOME_LAT=29.628147
 export PX4_HOME_LON=-82.360333
-# NOT 0.0, and deliberately NOT the real surveyed AMSL either (that's
-# ~26.9m - see park_coordinates.yaml's commented-out origin_z). This must
-# match whatever THIS simulation's own GPS/geoid math naturally computes
-# for these exact lat/lon coordinates: the EGM96 geoid undulation here is
-# -29.2059m (`echo "29.628147 -82.360333" | GeoidEval -n egm96-5`), which
-# is what the x500's mavros_msgs/Altitude.amsl reading at this same home
-# position also confirmed (~29.16, consistent within sim precision) - not
-# the real park's actual elevation.
-# Must be kept identical to autonomy_park.sdf's <elevation> and
-# park_coordinates.yaml's origin_z (see those files for why): whenever PX4
-# falls back to a raw GPS/baro-derived height reference instead of our
-# explicit EKF origin override (e.g. px4_telemetry's origin-set failing to
-# land in time, or an EKF height-source reset at touchdown), a mismatch
-# between this value and PX4's own auto-derived origin altitude shows up as
-# a ~29m instantaneous jump in local z - this is not a hypothetical, it's a
-# bug we hit and root-caused in SITL testing.
 export PX4_HOME_ALT=29.2059
 
 # Custom Gazebo world/model, added via px4-additions/ (see lib/write_px4_with_px4_additions.sh)
 export PX4_GZ_WORLD=autonomy_park
 export PX4_SIMULATOR=gz
-export PX4_SIM_MODEL=gz_homebrew # gz_ prefix required
+export PX4_SIM_MODEL=gz_x500 # gz_ prefix required
 export PX4_SYS_AUTOSTART=22000
 export PX4_GZ_MODEL_POSE="0.0,0,0.5,0,0,0"
 
