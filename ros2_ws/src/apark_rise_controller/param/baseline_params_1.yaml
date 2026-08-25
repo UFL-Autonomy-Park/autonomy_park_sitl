@@ -11,18 +11,18 @@
     k_2: 0.11
     k_3: 2.4
     k_rise: 0.5
-    arm_timeout_s: 10.0
+    arm_timeout_s: 8.0
     mode_cmd_retry_period_s: 1.0
     mpc_acc_hor_max_mps2: 6.0
     mpc_acc_vert_max_mps2: 6.0
     odom_timeout_s: 1.0
-    odom_watchdog_freq_hz: 10.0
+    odom_watchdog_freq_hz: 2.0
     q_e: 1.0
     r_u: 0.0
     r_udot: 0.0
     run_length_s: 60.0
     save_data: true
-    takeoff_timeout_s: 6.0
+    takeoff_timeout_s: 15.0
     theta_dot_bar: 1000.0
     traj1_alpha_warp: 0.5
     traj1_center_z_m_enu: 1.5
