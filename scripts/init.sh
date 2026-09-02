@@ -43,21 +43,41 @@ echo "==> [4/10] Installing MAVROS..."
 sudo apt-get install -y ros-humble-mavros ros-humble-mavros-extras ros-humble-mavros-msgs
 
 echo "==> [5/10] Installing MAVROS's GeographicLib datasets..."
+
+# Force a fresh download by clearing ALL files matching the prefix
+# (including .tar.bz2 or .part leftovers), not just the final .pgm
+sudo rm -f /usr/share/GeographicLib/geoids/egm96-5*
+sudo rm -f /usr/share/GeographicLib/gravity/egm96*
+sudo rm -f /usr/share/GeographicLib/magnetic/emm2015*
+
+curl -LsSf https://raw.githubusercontent.com/mavlink/mavros/ros2/mavros/scripts/install_geographiclib_datasets.sh | sudo bash
+
+GEOID_FILE="/usr/share/GeographicLib/geoids/egm96-5.pgm"
+GEOID_EXPECTED_SIZE=18671448  # confirmed against a known-good install
+
+if [[ "$(stat -c%s "$GEOID_FILE" 2>/dev/null || echo 0)" != "$GEOID_EXPECTED_SIZE" ]]; then
+    echo "ERROR: GeographicLib egm96-5 geoid dataset download failed or is incomplete." >&2
+    echo "  Check your network connection and re-run this script." >&2
+    exit 1
+fi
+
+# Max's old step 5 code
+#echo "==> [5/10] Installing MAVROS's GeographicLib datasets..."
 # Always force a fresh download - the upstream installer skips downloading
 # if a file named egm96-5* already exists, even a truncated leftover from a
 # previous failed/interrupted run (it only checks presence, not
 # completeness). That let a corrupt download go unnoticed here and instead
 # crash mavros_node/px4_telemetry_node later at runtime with "File has the
 # wrong length ... egm96-5.pgm" (seen in the wild on a fresh clone).
-GEOID_FILE="/usr/share/GeographicLib/geoids/egm96-5.pgm"
-sudo rm -f "$GEOID_FILE"
-curl -LsSf https://raw.githubusercontent.com/mavlink/mavros/ros2/mavros/scripts/install_geographiclib_datasets.sh | sudo bash
-GEOID_EXPECTED_SIZE=18671448  # confirmed against a known-good install
-if [[ "$(stat -c%s "$GEOID_FILE" 2>/dev/null || echo 0)" != "$GEOID_EXPECTED_SIZE" ]]; then
-    echo "ERROR: GeographicLib egm96-5 geoid dataset download failed or is incomplete." >&2
-    echo "  Check your network connection and re-run this script." >&2
-    exit 1
-fi
+# GEOID_FILE="/usr/share/GeographicLib/geoids/egm96-5.pgm"
+# sudo rm -f "$GEOID_FILE"
+# curl -LsSf https://raw.githubusercontent.com/mavlink/mavros/ros2/mavros/scripts/install_geographiclib_datasets.sh | sudo bash
+# GEOID_EXPECTED_SIZE=18671448  # confirmed against a known-good install
+# if [[ "$(stat -c%s "$GEOID_FILE" 2>/dev/null || echo 0)" != "$GEOID_EXPECTED_SIZE" ]]; then
+#     echo "ERROR: GeographicLib egm96-5 geoid dataset download failed or is incomplete." >&2
+#     echo "  Check your network connection and re-run this script." >&2
+#     exit 1
+# fi
 
 echo "==> [6/10] Installing geodesy (needed by aero_common)..."
 sudo apt-get install -y ros-humble-geodesy
