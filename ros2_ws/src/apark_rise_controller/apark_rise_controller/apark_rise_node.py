@@ -21,7 +21,7 @@ from geometry_msgs.msg import PoseStamped, TwistStamped
 
 import jax
 import jax.numpy as jnp
-jax.config.update("jax_platform_name", "cpu") # Force use of CPU since quad has no GPU
+jax.config.update("jax_platform_name", "cpu") # Force use of CPU
 jax.config.update("jax_enable_x64", True) # Use 64 bit since all floats to be used are doubles; otherwise XLA recompilation will occur mid-flight
 jax.config.update("jax_compilation_cache_dir", "/tmp/jax_cache")
 
@@ -52,19 +52,7 @@ class ExperimentFinished(Exception):
 class ControlLoopOverrunError(Exception):
     pass
 
-# --- Parameter loading ------------------------------------------------------
-# This node does NOT use ROS 2 parameters. Config is a plain dict read from one
-# or more YAML files named on the command line (--params-file, repeatable;
-# rise_controller.launch.py passes this package's tuning YAML plus the two
-# shared files from px4_telemetry / px4_safety_lib). Rules:
-#   * a key the node asks for and can't find  -> hard failure at startup
-#     (see AparkRiseNode._get_param)
-#   * a key present in a file but never asked for -> silently ignored
-# so no allow-list / exemption bookkeeping is needed the way it used to be.
-
 def _flatten_params(mapping: Dict[str, Any], prefix: str = "") -> Dict[str, Any]:
-    # Nested YAML maps -> dotted keys, matching how the node names them
-    # (safety_config.yaml's `safety: {min_x: ...}` -> "safety.min_x").
     flat: Dict[str, Any] = {}
     for key, value in mapping.items():
         full_key: str = f"{prefix}{key}"
@@ -75,10 +63,6 @@ def _flatten_params(mapping: Dict[str, Any], prefix: str = "") -> Dict[str, Any]
     return flat
 
 def _load_param_file(path: str) -> Dict[str, Any]:
-    # One YAML file -> flat {name: value}. Accepts a plain mapping, or the ROS
-    # params-file layout ({<node-glob>: {ros__parameters: {...}}}) -- the
-    # latter only so the files borrowed from other packages, which those
-    # packages still load the ROS way, work unmodified. No rclpy involved.
     if not os.path.isfile(path):
         raise FileNotFoundError(f"Parameter file not found: {path}")
     with open(file=path) as handle:
@@ -98,46 +82,29 @@ def _load_param_file(path: str) -> Dict[str, Any]:
     return _flatten_params(mapping=raw)
 
 def load_params(paths: List[str]) -> Dict[str, Any]:
-    # Layer several files into one dict; later files win (matches the old
-    # multi-file ROS param merge order in rise_controller.launch.py).
     merged: Dict[str, Any] = {}
     for path in paths:
         merged.update(_load_param_file(path=path))
     return merged
 
-# Fraction of control_period_s a single control_timer_callback tick is allowed to consume
-# before it's treated as a real-time violation. Kept as a code constant (not a YAML param):
-# it's a property of the control-loop deadline itself, not something a given experiment
-# should be tuning per run.
 CONTROL_TICK_BUDGET_FRACTION: float = 0.90
 
 class AparkRiseNode(Node):
     def __init__(self, params: Dict[str, Any]) -> None:
         super().__init__(node_name='apark_rise_node')
 
-        # Flat config dict from the YAML file(s) - see load_params(). The node
-        # never touches rclpy's parameter system: absent keys fail loud via
-        # _get_param(), extra keys are simply never read.
         self._params: Dict[str, Any] = params
-
-        # Basic Parameters of the Experiment
+        
+	# Essentials
         self.desired_trajectory: int = self._get_param(name='desired_trajectory')
         self.controller_type: str = self._get_param(name='controller_type')
         control_frequency_hz: float = self._get_param(name='control_frequency_hz')
         self.control_period_s: float = 1.0 / control_frequency_hz
         self.save_data: bool = self._get_param(name='save_data')
-        # The one optional key: set per-run by the Optuna orchestrator, absent for manual runs.
         self.trial_number: Optional[int] = self._params.get('trial_number')
         self.run_length_s: float = self._get_param(name='run_length_s')
         self.init_tol_m: float = self._get_param(name='init_tol_m')
         self.d_out: int = self._get_param(name='d_out')
-
-        # Odometry frame correction -- see velocity_callback()/publish_trajectory_setpoint_acceleration().
-        # Sourced from px4_telemetry's park_coordinates.yaml (passed in alongside this
-        # node's own params, see launch/rise_controller.launch.py), not this package's own
-        # YAML -- it's the same rotation px4_telemetry itself uses to build
-        # autonomy_park/pose, and duplicating it here would just be a second value to keep
-        # in sync by hand.
         self.origin_r: float = self._get_param(name='origin_r')
 
         # Desired Trajectory
@@ -146,11 +113,7 @@ class AparkRiseNode(Node):
         self.config: Dict[str, Any] = dict(self._params)
         self.traj_gen: TrajectoryGenerator = TrajectoryGenerator(config=self.config)
 
-        # Safety -- min/max_x/y/z sourced from px4_safety_lib's safety_config.yaml
-        # (passed in alongside this node's own params, see
-        # launch/rise_controller.launch.py), the same real flight-envelope bounds
-        # px4_safety_lib itself enforces, rather than a second box kept in sync by hand.
-        self.acc_hor_max_mps2: float = self._get_param(name='mpc_acc_hor_max_mps2')
+        # Safety
         self.acc_vert_max_mps2: float = self._get_param(name='mpc_acc_vert_max_mps2')
         self.safe_x_min_m_enu: float = self._get_param(name='safety.min_x')
         self.safe_x_max_m_enu: float = self._get_param(name='safety.max_x')
@@ -167,8 +130,7 @@ class AparkRiseNode(Node):
 
         self._validate_trajectory_envelope()
 
-        # Cost Function (same formula used for post-hoc gain selection in
-        # unified_orchestrator.py's compute_trial_J - no t-weighting on tracking error)
+        # Cost Function
         self.q_e: float = self._get_param(name='q_e')
         self.r_u: float = self._get_param(name='r_u')
         self.r_udot: float = self._get_param(name='r_udot')
@@ -323,10 +285,6 @@ class AparkRiseNode(Node):
         self.get_logger().info(f"Node initialized successfully. Controller: {self.controller_type.upper()} | Trajectory: {self.desired_trajectory}.")
 
     def _get_param(self, name: str) -> Any:
-        # Every experiment knob is required. A missing key means a broken config
-        # (typo, stale file, or one of the layered files wasn't passed) and must
-        # stop the run before anything arms - so fail loud, right here. Keys that
-        # exist in the file(s) but are never requested are ignored for free.
         if name not in self._params:
             raise ValueError(
                 f"Required parameter '{name}' is missing from the loaded parameter file(s). "
@@ -506,11 +464,7 @@ class AparkRiseNode(Node):
         self.terminal_command_sent = True
 
     def return_vehicle(self) -> None:
-        # AUTO.RTL: PX4's own return-to-launch mode - flies back to the
-        # home position (set at boot from PX4_HOME_LAT/LON/ALT, or the EKF
-        # origin if that was set explicitly after boot - see
-        # scripts/launch_one_homebrew.sh) and lands there automatically,
-        # rather than landing in place like land_vehicle() does.
+        # Return to HOME position set in PX4
         if self.terminal_command_sent:
             return
         self._request_mode(mode="AUTO.RTL")
@@ -530,7 +484,6 @@ class AparkRiseNode(Node):
         if self.trial_number is not None:
             # Deterministic name tied to the Optuna trial number so a retried attempt
             # overwrites the discarded attempt's file instead of leaving an orphaned CSV
-            # that can't be matched back to a trial (see item 7 in the migration writeup).
             csv_filename: str = os.path.join(base_dir, f"run_trial{self.trial_number}.csv")
         else:
             existing_files: List[str] = [f for f in os.listdir(path=base_dir) if f.endswith('.csv') and f.startswith('run_')]
@@ -616,12 +569,6 @@ class AparkRiseNode(Node):
         # Saturation clamping is deliberately NOT done here: it happens in the
         # caller, after u is recorded into history/cost tracking, so logged/cost-tracked
         # control effort stays pre-saturation while only the published setpoint is clamped
-        # (matches the original combined-case ordering exactly). phi_val (the NN
-        # feedforward term) is returned alongside u purely for history/CSV logging --
-        # it's zero and unused for every controller_type except resnet/integrated_resnet,
-        # where it's already folded into u below. theta_hat_dot/ball_projected/rate_limited
-        # are likewise CSV-logging-only and stay at their None/False defaults for every
-        # controller_type except resnet/integrated_resnet.
         u: np.ndarray = np.zeros(shape=self.d_out, dtype=np.float64)
         phi_val: np.ndarray = np.zeros(shape=self.d_out, dtype=np.float64)
         theta_hat_dot_val: Optional[np.ndarray] = None
@@ -737,11 +684,6 @@ class AparkRiseNode(Node):
         return u, phi_val, theta_hat_dot_val, ball_projected, rate_limited
 
     def control_timer_callback(self) -> None:
-        # Wraps the real tick so *every* code path through it (INIT/TAKEOFF/FOLLOW_TRAJ,
-        # including the JAX call and the publish itself) is covered by one end-to-end
-        # deadline check -- not just the ResNet forward/backward pass. A tick that runs
-        # long enough to eat into PX4's OFFBOARD signal-loss window is a real-time
-        # violation regardless of which line inside the tick was slow.
         tick_start_s: float = time.perf_counter()
         self._control_timer_tick()
         elapsed_s: float = time.perf_counter() - tick_start_s
@@ -890,12 +832,6 @@ class AparkRiseNode(Node):
                 e_dot: np.ndarray = qd_dot - q_dot
                 r1: Optional[np.ndarray] = (e_dot + (self.k_1 * e)) if self.controller_type in ['resnet', 'integrated_resnet', 'baseline', 'supertwisting'] else None
 
-                # Snapshot theta_hat as it stood when this tick's control was computed, before
-                # compute_control_output's internal compiled_update_step call reassigns it --
-                # matches the real-hardware CSV convention (weight_history[i] is the weight
-                # actually driving tick i's phi_val/control output, not the post-update value
-                # that only takes effect starting next tick). JAX arrays are immutable, so this
-                # plain reference is already an independent snapshot.
                 theta_hat_at_tick = self.theta_hat if self.controller_type in ["resnet", "integrated_resnet"] else None
 
                 u, phi_val, theta_hat_dot_val, ball_projected, rate_limited = self.compute_control_output(
@@ -924,8 +860,6 @@ class AparkRiseNode(Node):
                 current_u_sq: float = float(norm_u ** 2)
 
                 if not self.cost_started or dt <= 0:
-                    # No previous sample to difference against yet (first tick of the
-                    # trajectory) - contribute zero jerk rather than a spurious spike.
                     u_dot: np.ndarray = np.zeros(shape=3, dtype=np.float64)
                     current_u_dot_sq: float = 0.0
                 else:
@@ -994,21 +928,10 @@ class AparkRiseNode(Node):
                     raise ExperimentFinished("Trajectory completed successfully.")
 
 def main(args: Optional[List[str]] = None) -> None:
-    # The cyclic GC is a latency-jitter source we don't need: this process runs one
-    # bounded experiment and exits, so there's no long-run leak risk to guard against,
-    # and refcounting alone still reclaims everything that isn't part of a reference
-    # cycle. Disabling it removes an unpredictable stop-the-world pause from the hot
-    # control loop, where a single missed control_period_s can bleed into PX4's
-    # COM_OF_LOSS_T offboard-signal-loss window.
     gc.disable()
 
     rclpy.init(args=args)
 
-    # Config comes from YAML file(s) named on the command line, not ROS params.
-    # rise_controller.launch.py passes three --params-file arguments (this
-    # package's tuning YAML + the two shared files from px4_telemetry and
-    # px4_safety_lib); later files win. Running the node directly, pass the
-    # same set yourself.
     cli: argparse.ArgumentParser = argparse.ArgumentParser(prog='apark_rise_controller')
     cli.add_argument('--params-file', action='append', dest='params_files', default=[], metavar='PATH',
                      help='YAML parameter file; repeat to layer files (later files win). At least one required.')
