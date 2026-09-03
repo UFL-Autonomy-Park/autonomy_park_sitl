@@ -21,6 +21,24 @@ copy_contents "$PX4_ADDITIONS_DIR/models" "$PX4_DIR/Tools/simulation/gz/models"
 
 # 2. Airframe parameter files -> PX4-Autopilot/ROMFS/px4fmu_common/init.d-posix/airframes/
 AIRFRAMES_DIR="$PX4_DIR/ROMFS/px4fmu_common/init.d-posix/airframes"
+
+# px4-additions/params/ is the single source of truth for our custom
+# airframes. Before re-copying, remove anything a previous sync left
+# behind - a file we've since renamed or deleted in px4-additions/, or a
+# stray "foo (copy)" from a file manager - otherwise it lingers in the PX4
+# tree and PX4's own gz_bridge/CMakeLists.txt globs it into an
+# add_custom_target(gz_<suffix>_<world>), which fails the build on a
+# duplicate suffix or one containing spaces/parens.
+#
+# Every *stock* airframe is committed in the pinned PX4 submodule; only our
+# additions are untracked, so `git clean` here removes exactly what we
+# added and nothing else. CMakeLists.txt is only ever modified by
+# register_airframe below, so restoring the committed version drops stale
+# registrations without touching anything we care about.
+echo "Clearing previously-synced custom airframes and stale registrations..."
+git -C "$PX4_DIR" checkout -- "$AIRFRAMES_DIR/CMakeLists.txt"
+git -C "$PX4_DIR" clean -f -- "$AIRFRAMES_DIR"
+
 copy_contents "$PX4_ADDITIONS_DIR/params" "$AIRFRAMES_DIR"
 
 # PX4 does NOT glob this directory for its build: airframes/CMakeLists.txt

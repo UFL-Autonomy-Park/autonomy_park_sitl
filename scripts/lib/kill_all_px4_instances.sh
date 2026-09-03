@@ -32,13 +32,23 @@ echo "[*] Killing any running rise-controller experiment (vehicle is about to re
 "$SCRIPT_DIR/kill_rise_controller.sh"
 
 shopt -s nullglob
+
+# 1. Kill every PX4 process we started (by its pidfile's process group).
 for pidfile in /tmp/px4_instance_*.pid; do
     instance="$(basename "$pidfile" .pid)"
     instance="${instance#px4_instance_}"
-
     kill_pidfile_group "$pidfile" "PX4 instance $instance"
+done
 
-    echo "[*] Resetting model for instance $instance (if present)..."
+# 2. Reset every vehicle model that's actually in the running Gazebo world.
+# Unconditional on purpose: don't infer whether a model "needs" resetting
+# from whether a pidfile survived. PX4 can exit (crash, SIGKILL, a killed
+# terminal) without its pidfile being cleaned up, and a model left behind
+# by an earlier session has no pidfile here at all - either way the model
+# is still sitting under the last rotor thrust PX4 commanded and must be
+# reset. reset_model is idempotent and a no-op when nothing is there.
+for instance in $(instances_with_models); do
+    echo "[*] Resetting model for instance $instance..."
     reset_model "$instance"
 done
 

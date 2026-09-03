@@ -29,6 +29,16 @@ model_exists() {
     gz service -l 2>/dev/null | grep -q "^/world/$PX4_GZ_WORLD/model/$model_instance/"
 }
 
+# instances_with_models - prints the instance number of every vehicle model
+# (for the current $PX4_SIM_MODEL) currently present in the running Gazebo
+# world, one per line. Empty if Gazebo is down or no such model exists.
+instances_with_models() {
+    local prefix="${PX4_SIM_MODEL#*gz_}_"
+    gz service -l 2>/dev/null \
+        | sed -n "s#^/world/$PX4_GZ_WORLD/model/${prefix}\([0-9]\{1,\}\)/.*#\1#p" \
+        | sort -u
+}
+
 # reset_model INSTANCE - resets that instance's vehicle model to a clean
 # resting pose ($PX4_GZ_MODEL_POSE, identity orientation) with zero rotor
 # velocity. Safe to call any time, including when Gazebo isn't running or
@@ -113,7 +123,7 @@ launch_px4() {
     local extra_env=()
 
     if model_exists "$instance"; then
-        echo "[*] Model '$(model_instance_name "$instance")' already exists (already reset) - re-attaching..."
+        echo "[*] Model '$(model_instance_name "$instance")' already exists - re-attaching..."
         extra_env=(PX4_GZ_MODEL_NAME="$(model_instance_name "$instance")")
     else
         echo "[*] No existing model - spawning '$(model_instance_name "$instance")' for the first time..."

@@ -10,8 +10,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "$SCRIPT_DIR/sitl_env.sh"
 
 echo "############################################################"
-echo "#  First-time setup takes about 20 minutes. Go grab a       #"
-echo "#  coffee.                                                  #"
+echo "#  [ATTENTION] First-time setup takes about 20 minutes.    #"
 echo "############################################################"
 echo
 
@@ -23,6 +22,17 @@ if ! sudo -v; then
     echo "  before re-running this script." >&2
     exit 1
 fi
+
+# Keep sudo's credential cache warm for the whole run. This machine's auth
+# backend is slow and the cache sometimes lapses partway through - without
+# this, a later apt/geoid step randomly fails under `set -e` and leaves
+# setup half-finished (the geoid step used to delete a file up front, so a
+# lapse there left mavros with NO geoid grid and a SIGABRT on every launch).
+# Every step below is safe to re-run, so re-running init.sh after a failure
+# is always fine; this just makes that far less likely to be needed.
+{ while true; do sudo -n true || true; sleep 50; kill -0 "$$" 2>/dev/null || exit; done; } 2>/dev/null &
+_SUDO_KEEPALIVE_PID=$!
+trap 'kill "$_SUDO_KEEPALIVE_PID" 2>/dev/null || true' EXIT
 
 echo "==> [1/10] Installing Git LFS and fetching assets (custom meshes/textures)..."
 if ! command -v git-lfs >/dev/null 2>&1; then
@@ -42,20 +52,26 @@ sudo apt-get install -y python3-colcon-common-extensions
 echo "==> [4/10] Installing MAVROS..."
 sudo apt-get install -y ros-humble-mavros ros-humble-mavros-extras ros-humble-mavros-msgs
 
-echo "==> [5/10] Installing MAVROS's GeographicLib datasets..."
-# Always force a fresh download - the upstream installer skips downloading
-# if a file named egm96-5* already exists, even a truncated leftover from a
-# previous failed/interrupted run (it only checks presence, not
-# completeness). That let a corrupt download go unnoticed here and instead
-# crash mavros_node/px4_telemetry_node later at runtime with "File has the
-# wrong length ... egm96-5.pgm" (seen in the wild on a fresh clone).
+echo "==> [5/10] Installing MAVROS's GeographicLib geoid dataset..."
+# mavros_node's UAS component hard-aborts (SIGABRT, exit -6) at startup if
+# the egm96-5 geoid grid is missing or unreadable, so this must succeed for
+# SITL to work at all.
+#
+# geographiclib-get-geoids (from geographiclib-tools, a dependency of
+# ros-humble-mavros installed just above) downloads from SourceForge and
+# installs the grid atomically. Re-running it just re-fetches. This
+# deliberately does NOT delete the existing file first: the previous
+# approach rm'd it up front and then piped an installer from
+# raw.githubusercontent.com to `sudo bash`, so any hiccup in that fetch
+# (network, or sudo's cache lapsing right there) left NO geoid file at all
+# rather than a stale one - which is exactly how mavros ended up crash-
+# looping on this machine.
 GEOID_FILE="/usr/share/GeographicLib/geoids/egm96-5.pgm"
-sudo rm -f "$GEOID_FILE"
-curl -LsSf https://raw.githubusercontent.com/mavlink/mavros/ros2/mavros/scripts/install_geographiclib_datasets.sh | sudo bash
-GEOID_EXPECTED_SIZE=18671448  # confirmed against a known-good install
-if [[ "$(stat -c%s "$GEOID_FILE" 2>/dev/null || echo 0)" != "$GEOID_EXPECTED_SIZE" ]]; then
-    echo "ERROR: GeographicLib egm96-5 geoid dataset download failed or is incomplete." >&2
-    echo "  Check your network connection and re-run this script." >&2
+sudo apt-get install -y geographiclib-tools
+sudo geographiclib-get-geoids egm96-5
+if [[ ! -s "$GEOID_FILE" ]] || (( $(stat -c%s "$GEOID_FILE") < 1000000 )); then
+    echo "ERROR: $GEOID_FILE missing or too small after install." >&2
+    echo "  mavros_node will SIGABRT on launch until this succeeds - re-run init.sh." >&2
     exit 1
 fi
 
