@@ -4,6 +4,28 @@
     <include merge='true'>
       <uri>homebrew_base</uri>
     </include>
+
+    <!-- MOTOR MODEL - per rotor:  thrust = motorConstant * omega^2  (N),
+         yaw reaction torque = momentConstant * thrust.  omega slews toward
+         the commanded value with first-order lag (timeConstantUp/Down).
+         PX4 throttle t in [0,1] maps to omega via SIM_GZ_EC_MIN/MAX in the
+         airframe file: omega = 150 + 850*t.  rotorVelocitySlowdownSim only
+         scales the *visual* joint spin, not the forces.
+
+         motorConstant was 8.54858e-06 - copied verbatim from the x500,
+         which is a 2.0 kg airframe.  The homebrew is ~2.95 kg, so that
+         value gave a max total thrust of ~34 N against ~29 N of weight:
+         thrust/weight ~1.18, and a true hover throttle of ~0.91 that PX4's
+         hover-thrust estimator cannot even represent (it clamps near 0.8).
+         PX4 commanded its default hover (~0.60 -> ~15 N) and simply could
+         not leave the ground; the takeoff only ever succeeded when the
+         position-controller integrator wound all the way up to full thrust.
+
+         1.9e-05 models the real motors (4x T-Motor U5 KV400, 15 in props,
+         6S): ~19 N (1.9 kgf) per rotor at full throttle -> ~76 N total,
+         thrust/weight ~2.6, true hover throttle ~0.55 (set MPC_THR_HOVER
+         0.55 to match).  Re-bench against real thrust-stand data when
+         available and adjust this one number. -->
     <plugin filename="gz-sim-multicopter-motor-model-system"
       name="gz::sim::systems::MulticopterMotorModel">
       <jointName>rotor_0_joint</jointName>
@@ -12,7 +34,7 @@
       <timeConstantUp>0.0125</timeConstantUp>
       <timeConstantDown>0.025</timeConstantDown>
       <maxRotVelocity>1000.0</maxRotVelocity>
-      <motorConstant>8.54858e-06</motorConstant>
+      <motorConstant>1.9e-05</motorConstant>
       <momentConstant>0.016</momentConstant>
       <commandSubTopic>command/motor_speed</commandSubTopic>
       <motorNumber>0</motorNumber>
@@ -29,7 +51,7 @@
       <timeConstantUp>0.0125</timeConstantUp>
       <timeConstantDown>0.025</timeConstantDown>
       <maxRotVelocity>1000.0</maxRotVelocity>
-      <motorConstant>8.54858e-06</motorConstant>
+      <motorConstant>1.9e-05</motorConstant>
       <momentConstant>0.016</momentConstant>
       <commandSubTopic>command/motor_speed</commandSubTopic>
       <motorNumber>1</motorNumber>
@@ -46,7 +68,7 @@
       <timeConstantUp>0.0125</timeConstantUp>
       <timeConstantDown>0.025</timeConstantDown>
       <maxRotVelocity>1000.0</maxRotVelocity>
-      <motorConstant>8.54858e-06</motorConstant>
+      <motorConstant>1.9e-05</motorConstant>
       <momentConstant>0.016</momentConstant>
       <commandSubTopic>command/motor_speed</commandSubTopic>
       <motorNumber>2</motorNumber>
@@ -63,7 +85,7 @@
       <timeConstantUp>0.0125</timeConstantUp>
       <timeConstantDown>0.025</timeConstantDown>
       <maxRotVelocity>1000.0</maxRotVelocity>
-      <motorConstant>8.54858e-06</motorConstant>
+      <motorConstant>1.9e-05</motorConstant>
       <momentConstant>0.016</momentConstant>
       <commandSubTopic>command/motor_speed</commandSubTopic>
       <motorNumber>3</motorNumber>

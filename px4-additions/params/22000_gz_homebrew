@@ -23,6 +23,7 @@ PX4_GZ_MODEL_POSE=${PX4_GZ_MODEL_POSE:="0,0,0.5,0,0,0"}
 # KM < 0 = CCW spin (negative yaw torque)
 # KM > 0 = CW  spin (positive yaw torque)
 # Measured by Mingyuan (Damian) Gao from a real-world quad in August 2026
+# Overriden with real parameters used in the quad--shouldn't be too different
 
 param set-default CA_ROTOR0_PX  0.25 # Damian: 0.2418
 param set-default CA_ROTOR0_PY  0.25 # Damian: 0.2446
@@ -48,6 +49,13 @@ param set-default SIM_GZ_EN 1 # sim mode (disable by settings to 0 if this were 
 param set-default SENS_EN_GPSSIM 1
 param set-default SENS_EN_BAROSIM 1
 param set-default SENS_EN_MAGSIM 1
+
+# Hover throttle. With motorConstant 1.9e-05 in homebrew/model.sdf (models
+# 4x T-Motor U5 KV400 / 15in / 6S, ~2.6 thrust-to-weight), the vehicle
+# actually hovers near 0.55 throttle. The x500 base sets 0.60; that plus
+# the old copied-from-x500 motor constant is why takeoff kept failing.
+# The hover-thrust estimator refines this online at runtime.
+param set-default MPC_THR_HOVER 0.55
 
 # ── Safety ───────────────────────────────────────────────────────
 param set-default RTL_DESCEND_ALT 1.5 # m (default: 60 m) since the Park is small and the net is at 6 m

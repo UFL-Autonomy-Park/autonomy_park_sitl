@@ -7,7 +7,7 @@
     <link name="base_link">
       <self_collide>false</self_collide>
       <gravity>true</gravity>
-      <velocity_decay />
+      <velocity_decay/>
 
       <inertial>
         <mass>2.27304650076778</mass>
@@ -37,34 +37,133 @@
         </geometry>
       </visual>
 
-      <!-- Single convex cylinder bounding the whole hub+battery+rails
-           envelope (radius/height/center derived from the four separate
-           box collisions this replaced: x in [-0.273,0.273], y in
-           [-0.272,0.272], z in [-0.162,0.1105], padded slightly). Four
-           separate boxes meeting at seams turned out to have the same
-           landing-gear-sticks-in-the-ground failure mode as the world's
-           old hand-made hill collision mesh: a box resting near a seam
-           between two collision primitives is a known-bad case for
-           generic mesh/primitive contact generation. One seamless convex
-           shape - the same fix that worked for the hill - removes every
-           internal seam the vehicle's own collision could catch on. -->
-      <collision name="base_link_collision">
-        <pose>0 0 -.026 0 0 0</pose>
+      <!-- Collision: a small central pod box + FOUR SPHERICAL FEET.
+           Everything that can touch the ground is either box-on-flat-plane
+           (the pod, on the flight-cage floor) or a sphere (the feet, which
+           are what touch on the hill).
+
+           Why spheres for the feet, not flat skid bars:
+           The hill is a Bullet heightfield (confirmed in the gz server log:
+           "DART Bullet heightfield ...") triangulated at ~5-7 cm/pixel,
+           local slopes up to ~16 deg. A thin flat box spanning several of
+           those triangles on a slope hits the classic internal-edge
+           problem - Bullet hands back contacts with the wrong triangle's
+           normal, some pointing INTO the surface. The skid then works its
+           way in and wedges ("forks into the ground"), and it does not
+           come back out: this stack (gz-physics 7.8 dartsim plugin,
+           DART 6.13) does NOT read <surface><contact><ode> min_depth or
+           max_vel - checked the plugin binaries - so DART's own contact
+           constraint governs penetration recovery, and its default is
+           weak: observed behavior is a deeply-penetrated body easing out
+           over many seconds ("stuck on takeoff / slowly rises / then
+           catapults when it finally pops free"). PX4's land detector flaps
+           takeoff<->landed the whole time (see px4 log).
+           x500 gets away with flat skid bars only because its geometry
+           barely penetrates: ~20 cm of body clearance, tiny skid tips, an
+           angled-leg truss. A sphere vs a triangle mesh has no edges to
+           catch - the contact normal is always (sphere_center - surface),
+           well-defined regardless of triangulation - so penetration stays
+           shallow and DART's weak recovery is enough.
+
+           Geometry from base_link.stl vertex extents:
+             pod  (z ~ 0)     : dense body ~0.20 x 0.20 -> 0.22 box,
+                                raised to z +0.02 so its underside (z -0.04)
+                                clears a 16 deg slope with the feet planted.
+             feet (z ~ -0.16) : mesh skid pair, y = +/-0.18, x = +/-0.09,
+                                mesh underside z = -0.1625. Sphere r 0.03,
+                                centers at z -0.1325 -> undersides at -0.1625.
+           Model <pose> z is 0.162, so foot undersides sit at world z = 0 at
+           rest (flush, no spawn interpenetration).
+           <surface><contact><ode> kept only to mirror x500_base; it is
+           inert here (see above). Friction = ode defaults (mu 1). -->
+      <collision name="base_link_collision_pod">
+        <pose>0 0 0.02 0 0 0</pose>
         <geometry>
-          <cylinder>
-            <radius>0.28</radius>
-            <length>0.28</length>
-          </cylinder>
+          <box>
+            <size>0.22 0.22 0.12</size>
+          </box>
         </geometry>
         <surface>
           <contact>
             <ode>
               <min_depth>0.001</min_depth>
-              <!-- max_vel caps the contact push-out correction speed; 0 disables
-                   push-out correction entirely, letting sustained downward load
-                   (e.g. rotor thrust against a sloped surface) sink in without
-                   ever being corrected back out. Use the engine's default. -->
-              <max_vel>100</max_vel>
+              <max_vel>0</max_vel>
+            </ode>
+          </contact>
+          <friction>
+            <ode/>
+          </friction>
+        </surface>
+      </collision>
+      <collision name="foot_fl_collision">
+        <pose>0.09 0.18 -0.1325 0 0 0</pose>
+        <geometry>
+          <sphere>
+            <radius>0.03</radius>
+          </sphere>
+        </geometry>
+        <surface>
+          <contact>
+            <ode>
+              <min_depth>0.001</min_depth>
+              <max_vel>0</max_vel>
+            </ode>
+          </contact>
+          <friction>
+            <ode/>
+          </friction>
+        </surface>
+      </collision>
+      <collision name="foot_fr_collision">
+        <pose>0.09 -0.18 -0.1325 0 0 0</pose>
+        <geometry>
+          <sphere>
+            <radius>0.03</radius>
+          </sphere>
+        </geometry>
+        <surface>
+          <contact>
+            <ode>
+              <min_depth>0.001</min_depth>
+              <max_vel>0</max_vel>
+            </ode>
+          </contact>
+          <friction>
+            <ode/>
+          </friction>
+        </surface>
+      </collision>
+      <collision name="foot_bl_collision">
+        <pose>-0.09 0.18 -0.1325 0 0 0</pose>
+        <geometry>
+          <sphere>
+            <radius>0.03</radius>
+          </sphere>
+        </geometry>
+        <surface>
+          <contact>
+            <ode>
+              <min_depth>0.001</min_depth>
+              <max_vel>0</max_vel>
+            </ode>
+          </contact>
+          <friction>
+            <ode/>
+          </friction>
+        </surface>
+      </collision>
+      <collision name="foot_br_collision">
+        <pose>-0.09 -0.18 -0.1325 0 0 0</pose>
+        <geometry>
+          <sphere>
+            <radius>0.03</radius>
+          </sphere>
+        </geometry>
+        <surface>
+          <contact>
+            <ode>
+              <min_depth>0.001</min_depth>
+              <max_vel>0</max_vel>
             </ode>
           </contact>
           <friction>
@@ -169,7 +268,7 @@
     <link name="rotor_0">
       <gravity>true</gravity>
       <self_collide>false</self_collide>
-      <velocity_decay />
+      <velocity_decay/>
       <pose>0.2418 -0.2446 0.076024 0 0 0</pose><!--motor poses are fine-->
       <inertial>
         <!-- Mass/inertia from T-Motor U5 KV400 datasheet (156g, Φ42.5x37.5mm), inertia estimated as a solid cylinder -->
@@ -194,27 +293,30 @@
           </mesh>
         </geometry>
       </visual>
+      <!-- Thin disc, not the full motor+prop box. This link genuinely spins
+           (MulticopterMotorModel drives the joint), so a 3-D collision
+           volume here is a spinning collider that pumps energy into any
+           contact it clips on a tilted takeoff/landing - the x500 uses a
+           ~1 mm plate for exactly this reason. Radius = prop half-span from
+           motor_ccw.stl (0.386 / 2). <ode> contact params dropped (ignored
+           by dartsim + bullet, as above). -->
       <collision name="rotor_0_collision">
-        <pose>0 0 0 0 0 0 </pose>
+        <pose>0 0 0 0 0 0</pose>
         <geometry>
-          <box>
-            <!-- Measured from motor_ccw.stl's own bounding box (blade axis along local X) -->
-            <size>0.386 0.0511 0.0471</size>
-          </box>
+          <cylinder>
+            <radius>0.193</radius>
+            <length>0.004</length>
+          </cylinder>
         </geometry>
         <surface>
           <contact>
             <ode>
               <min_depth>0.001</min_depth>
-              <!-- max_vel caps the contact push-out correction speed; 0 disables
-                   push-out correction entirely, letting sustained downward load
-                   (e.g. rotor thrust against a sloped surface) sink in without
-                   ever being corrected back out. Use the engine's default. -->
-              <max_vel>100</max_vel>
+              <max_vel>0</max_vel>
             </ode>
           </contact>
           <friction>
-            <ode />
+            <ode/>
           </friction>
         </surface>
       </collision>
@@ -238,7 +340,7 @@
     <link name="rotor_1">
       <gravity>true</gravity>
       <self_collide>false</self_collide>
-      <velocity_decay />
+      <velocity_decay/>
       <pose>-0.2418 0.2446 0.076024 0 0 0</pose>
       <inertial>
         <!-- Mass/inertia from T-Motor U5 KV400 datasheet (156g, Φ42.5x37.5mm), inertia estimated as a solid cylinder -->
@@ -263,27 +365,24 @@
           </mesh>
         </geometry>
       </visual>
+      <!-- Thin disc - see rotor_0_collision. Radius from motor_ccw.stl. -->
       <collision name="rotor_1_collision">
-        <pose>0 0 0 0 0 0 </pose>
+        <pose>0 0 0 0 0 0</pose>
         <geometry>
-          <box>
-            <!-- Measured from motor_ccw.stl's own bounding box (blade axis along local X) -->
-            <size>0.386 0.0511 0.0471</size>
-          </box>
+          <cylinder>
+            <radius>0.193</radius>
+            <length>0.004</length>
+          </cylinder>
         </geometry>
         <surface>
           <contact>
             <ode>
               <min_depth>0.001</min_depth>
-              <!-- max_vel caps the contact push-out correction speed; 0 disables
-                   push-out correction entirely, letting sustained downward load
-                   (e.g. rotor thrust against a sloped surface) sink in without
-                   ever being corrected back out. Use the engine's default. -->
-              <max_vel>100</max_vel>
+              <max_vel>0</max_vel>
             </ode>
           </contact>
           <friction>
-            <ode />
+            <ode/>
           </friction>
         </surface>
       </collision>
@@ -307,7 +406,7 @@
     <link name="rotor_2">
       <gravity>true</gravity>
       <self_collide>false</self_collide>
-      <velocity_decay />
+      <velocity_decay/>
       <pose>0.2418 0.2446 0.0760238662373196 0 0 0</pose>
       <inertial>
         <!-- Mass/inertia from T-Motor U5 KV400 datasheet (156g, Φ42.5x37.5mm), inertia estimated as a solid cylinder -->
@@ -332,27 +431,25 @@
           </mesh>
         </geometry>
       </visual>
+      <!-- Thin disc - see rotor_0_collision. Radius = prop half-span from
+           motor_cw.stl (0.3646 / 2). -->
       <collision name="rotor_2_collision">
-        <pose>0 0 0 0 0 0 </pose>
+        <pose>0 0 0 0 0 0</pose>
         <geometry>
-          <box>
-            <!-- Measured from motor_cw.stl's own bounding box (blade axis along local Y, unlike the ccw mesh) -->
-            <size>0.1367 0.3646 0.0471</size>
-          </box>
+          <cylinder>
+            <radius>0.182</radius>
+            <length>0.004</length>
+          </cylinder>
         </geometry>
         <surface>
           <contact>
             <ode>
               <min_depth>0.001</min_depth>
-              <!-- max_vel caps the contact push-out correction speed; 0 disables
-                   push-out correction entirely, letting sustained downward load
-                   (e.g. rotor thrust against a sloped surface) sink in without
-                   ever being corrected back out. Use the engine's default. -->
-              <max_vel>100</max_vel>
+              <max_vel>0</max_vel>
             </ode>
           </contact>
           <friction>
-            <ode />
+            <ode/>
           </friction>
         </surface>
       </collision>
@@ -376,7 +473,7 @@
     <link name="rotor_3">
       <gravity>true</gravity>
       <self_collide>false</self_collide>
-      <velocity_decay />
+      <velocity_decay/>
       <pose>-0.2418 -0.2446 0.0760238662373188 0 0 0</pose>
       <inertial>
         <!-- Mass/inertia from T-Motor U5 KV400 datasheet (156g, Φ42.5x37.5mm), inertia estimated as a solid cylinder -->
@@ -401,27 +498,24 @@
           </mesh>
         </geometry>
       </visual>
+      <!-- Thin disc - see rotor_0_collision. Radius from motor_cw.stl. -->
       <collision name="rotor_3_collision">
-        <pose>0 0 0 0 0 0 </pose>
+        <pose>0 0 0 0 0 0</pose>
         <geometry>
-          <box>
-            <!-- Measured from motor_cw.stl's own bounding box (blade axis along local Y, unlike the ccw mesh) -->
-            <size>0.1367 0.3646 0.0471</size>
-          </box>
+          <cylinder>
+            <radius>0.182</radius>
+            <length>0.004</length>
+          </cylinder>
         </geometry>
         <surface>
           <contact>
             <ode>
               <min_depth>0.001</min_depth>
-              <!-- max_vel caps the contact push-out correction speed; 0 disables
-                   push-out correction entirely, letting sustained downward load
-                   (e.g. rotor thrust against a sloped surface) sink in without
-                   ever being corrected back out. Use the engine's default. -->
-              <max_vel>100</max_vel>
+              <max_vel>0</max_vel>
             </ode>
           </contact>
           <friction>
-            <ode />
+            <ode/>
           </friction>
         </surface>
       </collision>

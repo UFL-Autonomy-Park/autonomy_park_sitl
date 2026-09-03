@@ -216,7 +216,7 @@
       <pose>0 0 0 0 0 0</pose>
       <link name='link'>
         <collision name='collision'>
-          <pose>-12.9456 3.644 0.03 0 0 0</pose>
+          <pose>-12.9456 3.644 0.001 0 0 0</pose>
           <geometry>
             <heightmap>
               <uri>materials/textures/hill_heightmap.png</uri>
