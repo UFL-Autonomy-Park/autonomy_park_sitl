@@ -131,7 +131,7 @@ Once Terminals 1–3 above are all up, run a single RISE controller experiment
 (takeoff, tracks a trajectory, then lands) in its own terminal (Terminal 4)
 
 ```bash
-./scripts/launch_rise_controller.sh
+./scripts/launch_rise_controller.sh baseline_params_1.yaml homebrew_0
 ```
 
 Results are written under `simulation_data/` in the workspace's root directory.
@@ -275,16 +275,18 @@ you need to ensure the `ros2` daemon uses the config in `scripts/sitl_env.sh`.
 > When respawning a PX4 instance (e.g., `launch_one_homebrew.sh`),
 you much re-launch your autonomy stack (e.g., `launch_ros2_autonomy_stack.sh`)
 
-> [!WARNING]
-> Avoid landing on the hill. Despite extensive debugging, the quadcopter can get stuck in the ground
-> and may not be able to takeoff again. Taking off a freshly-spawned model from ordinary ground level is usually fine.
-
 > [!TIP]
 > If something is stuck badly enough that the scripts above (`Ctrl-C`, or
 their matching `kill_*.sh`) aren't cutting it, `scripts/kill_all_force.sh`
 is a last-resort nuclear option: it `SIGKILL`s every Gazebo/PX4/ROS 2
 process this project can start, machine-wide, with no graceful shutdown
 (any vehicle currently flying will not land).
+
+> [!TIP]
+> Use the following in a new terminal window to echo or check topics!
+```bash
+clear && source scripts/sitl_env.sh && ros2 topic list
+```
 
 ## Bugs and Feature Requests
 

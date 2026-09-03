@@ -1,16 +1,19 @@
 import os
 import gc
+import sys
 import math
 import time
 import csv
+import argparse
 from functools import partial
 import numpy as np
+import yaml
 from typing import Optional, List, Tuple, Dict, Any
 
 import rclpy
 from rclpy.node import Node
 from rclpy.qos import QoSProfile, ReliabilityPolicy, HistoryPolicy, DurabilityPolicy
-from rcl_interfaces.msg import ParameterDescriptor, ParameterType
+from rclpy.utilities import remove_ros_args
 
 from mavros_msgs.msg import State, PositionTarget
 from mavros_msgs.srv import CommandBool, SetMode
@@ -49,43 +52,58 @@ class ExperimentFinished(Exception):
 class ControlLoopOverrunError(Exception):
     pass
 
-# Param names that are only ever fetched for SOME controller_type values (e.g. K_P/K_I/K_D
-# are read when controller_type == 'pid' but not otherwise). A single params.yaml commonly
-# holds gains for every controller type at once so it's quick to switch controller_type
-# without re-adding gains -- so these names are legitimate to leave declared-but-unused for
-# any one run and must not trip the unrecognized-parameter check in
-# _validate_declared_parameters(). Anything NOT in this set (plus what a given run actually
-# fetches) is either a genuine typo/stale key or an always-required name -- both real bugs.
-CONTROLLER_CONDITIONAL_PARAM_NAMES: set = {
-    'K_P', 'K_I', 'K_D',
-    'k_1', 'k_2', 'k_3', 'k_rise',
-    'd_in', 'initial_weights', 'gamma', 'sigma_mod', 'theta_bar', 'theta_dot_bar',
-    'hidden_width', 'num_blocks', 'k_0', 'k_i', 'h_act_func', 'o_act_func', 'shortcut_act_func',
-    'use_sim_time' # TEMP
-}
+# --- Parameter loading ------------------------------------------------------
+# This node does NOT use ROS 2 parameters. Config is a plain dict read from one
+# or more YAML files named on the command line (--params-file, repeatable;
+# rise_controller.launch.py passes this package's tuning YAML plus the two
+# shared files from px4_telemetry / px4_safety_lib). Rules:
+#   * a key the node asks for and can't find  -> hard failure at startup
+#     (see AparkRiseNode._get_param)
+#   * a key present in a file but never asked for -> silently ignored
+# so no allow-list / exemption bookkeeping is needed the way it used to be.
 
-# Param names that are declared in the YAML purely as input to
-# scripts/generate_hardware_params.py (consumed there to bake initial_weights before the
-# YAML is ever written) and are never read by the node itself at runtime.
-GENERATOR_ONLY_PARAM_NAMES: set = {
-    'initial_weight_scale_factor',
-}
+def _flatten_params(mapping: Dict[str, Any], prefix: str = "") -> Dict[str, Any]:
+    # Nested YAML maps -> dotted keys, matching how the node names them
+    # (safety_config.yaml's `safety: {min_x: ...}` -> "safety.min_x").
+    flat: Dict[str, Any] = {}
+    for key, value in mapping.items():
+        full_key: str = f"{prefix}{key}"
+        if isinstance(value, dict):
+            flat.update(_flatten_params(mapping=value, prefix=f"{full_key}."))
+        else:
+            flat[full_key] = value
+    return flat
 
-# Param names that show up declared only because they arrive bundled in shared param
-# files from other aero_common packages, passed to this node alongside its own YAML in
-# launch/rise_controller.launch.py -- origin_r comes from px4_telemetry's
-# park_coordinates.yaml (single source of truth for the apark-frame rotation, shared with
-# px4_telemetry/px4_teleop) and safety.min/max_x/y/z come from px4_safety_lib's
-# safety_config.yaml (this node's actual flight-envelope bounds). This node only reads
-# origin_r and the six safety.min/max_* bounds out of those two files; the rest of each
-# file's keys (origin_x/y/z, utm_zone/band, and safety's potential-field tuning knobs)
-# are declared too via automatically_declare_parameters_from_overrides but are irrelevant
-# here, so they're exempted the same way CONTROLLER_CONDITIONAL_PARAM_NAMES is above.
-EXTERNAL_PARAM_NAMES: set = {
-    'origin_x', 'origin_y', 'origin_z', 'utm_zone', 'utm_band',
-    'safety.max_influence', 'safety.fence_a', 'safety.fence_b', 'safety.fence_p',
-    'safety.obs_a', 'safety.obs_b', 'safety.obs_p', 'safety.enable_viz',
-}
+def _load_param_file(path: str) -> Dict[str, Any]:
+    # One YAML file -> flat {name: value}. Accepts a plain mapping, or the ROS
+    # params-file layout ({<node-glob>: {ros__parameters: {...}}}) -- the
+    # latter only so the files borrowed from other packages, which those
+    # packages still load the ROS way, work unmodified. No rclpy involved.
+    if not os.path.isfile(path):
+        raise FileNotFoundError(f"Parameter file not found: {path}")
+    with open(file=path) as handle:
+        document: Any = yaml.safe_load(stream=handle) or {}
+    if not isinstance(document, dict):
+        raise ValueError(f"Parameter file {path} must have a YAML mapping at the top level.")
+
+    ros_sections: List[dict] = [
+        value["ros__parameters"] for value in document.values()
+        if isinstance(value, dict) and isinstance(value.get("ros__parameters"), dict)
+    ]
+    raw: Dict[str, Any] = {}
+    for section in ros_sections:
+        raw.update(section)
+    if not ros_sections:
+        raw = document
+    return _flatten_params(mapping=raw)
+
+def load_params(paths: List[str]) -> Dict[str, Any]:
+    # Layer several files into one dict; later files win (matches the old
+    # multi-file ROS param merge order in rise_controller.launch.py).
+    merged: Dict[str, Any] = {}
+    for path in paths:
+        merged.update(_load_param_file(path=path))
+    return merged
 
 # Fraction of control_period_s a single control_timer_callback tick is allowed to consume
 # before it's treated as a real-time violation. Kept as a code constant (not a YAML param):
@@ -94,14 +112,13 @@ EXTERNAL_PARAM_NAMES: set = {
 CONTROL_TICK_BUDGET_FRACTION: float = 0.90
 
 class AparkRiseNode(Node):
-    def __init__(self) -> None:
-        super().__init__(
-            node_name='apark_rise_node',
-            allow_undeclared_parameters=True,
-            automatically_declare_parameters_from_overrides=True
-        )
+    def __init__(self, params: Dict[str, Any]) -> None:
+        super().__init__(node_name='apark_rise_node')
 
-        self._used_param_names: set = set()
+        # Flat config dict from the YAML file(s) - see load_params(). The node
+        # never touches rclpy's parameter system: absent keys fail loud via
+        # _get_param(), extra keys are simply never read.
+        self._params: Dict[str, Any] = params
 
         # Basic Parameters of the Experiment
         self.desired_trajectory: int = self._get_param(name='desired_trajectory')
@@ -109,7 +126,8 @@ class AparkRiseNode(Node):
         control_frequency_hz: float = self._get_param(name='control_frequency_hz')
         self.control_period_s: float = 1.0 / control_frequency_hz
         self.save_data: bool = self._get_param(name='save_data')
-        self.trial_number: Optional[int] = self._get_param(name='trial_number') if self.has_parameter('trial_number') else None
+        # The one optional key: set per-run by the Optuna orchestrator, absent for manual runs.
+        self.trial_number: Optional[int] = self._params.get('trial_number')
         self.run_length_s: float = self._get_param(name='run_length_s')
         self.init_tol_m: float = self._get_param(name='init_tol_m')
         self.d_out: int = self._get_param(name='d_out')
@@ -125,15 +143,8 @@ class AparkRiseNode(Node):
         # Desired Trajectory
         if self.desired_trajectory not in [1,2]:
             raise ValueError("INVALID DESIRED TRAJECTORY SELECTED.")
-        # Fix: Convert parameters to primitive values for config
-        self.config: Dict[str, Any] = {k: v.value for k, v in self.get_parameters_by_prefix(prefix='').items()}
+        self.config: Dict[str, Any] = dict(self._params)
         self.traj_gen: TrajectoryGenerator = TrajectoryGenerator(config=self.config)
-
-        self._used_param_names.update([
-            'traj1_center_z_m_enu', 'traj1_period_s', 'traj1_x_amp_m_enu',
-            'traj1_y_amp_m_enu', 'traj1_z_amp_m_enu', 'traj1_alpha_warp',
-            'traj2_center_z_m_enu', 'traj2_petal_radius_m', 'traj2_target_speed_mps'
-        ])
 
         # Safety -- min/max_x/y/z sourced from px4_safety_lib's safety_config.yaml
         # (passed in alongside this node's own params, see
@@ -309,26 +320,19 @@ class AparkRiseNode(Node):
 
         self.odom_watchdog_timer = self.create_timer(timer_period_sec=1.0/self.odom_watchdog_freq_hz, callback=self.odom_watchdog_callback)
 
-        self._validate_declared_parameters()
-
         self.get_logger().info(f"Node initialized successfully. Controller: {self.controller_type.upper()} | Trajectory: {self.desired_trajectory}.")
 
     def _get_param(self, name: str) -> Any:
-        self._used_param_names.add(name)
-        return self.get_parameter(name=name).value
-
-    def _validate_declared_parameters(self) -> None:
-        # The flip side of never falling back to a default: a param name that's declared
-        # (present in the YAML) but never fetched anywhere above is either a typo of a real
-        # name or a stale key left behind by a rename -- both are bugs we want to catch at
-        # startup, not silently ignore. CONTROLLER_CONDITIONAL_PARAM_NAMES is excluded since
-        # a single params.yaml legitimately keeps every controller type's gains declared at
-        # once so switching controller_type doesn't require re-adding them.
-        declared_names: set = set(self.get_parameters_by_prefix(prefix='').keys())
-        unrecognized: set = declared_names - self._used_param_names - CONTROLLER_CONDITIONAL_PARAM_NAMES - GENERATOR_ONLY_PARAM_NAMES - EXTERNAL_PARAM_NAMES
-        if unrecognized:
-            self.get_logger().fatal(f"Unrecognized parameter(s) in YAML, not read by this node: {sorted(unrecognized)}. Check for typos or stale/renamed keys.")
-            raise ValueError(f"Unrecognized parameter(s): {sorted(unrecognized)}.")
+        # Every experiment knob is required. A missing key means a broken config
+        # (typo, stale file, or one of the layered files wasn't passed) and must
+        # stop the run before anything arms - so fail loud, right here. Keys that
+        # exist in the file(s) but are never requested are ignored for free.
+        if name not in self._params:
+            raise ValueError(
+                f"Required parameter '{name}' is missing from the loaded parameter file(s). "
+                f"Loaded keys: {sorted(self._params)}"
+            )
+        return self._params[name]
 
     def _validate_trajectory_envelope(self) -> None:
         # Catches a correctly-named-but-dangerously-valued config (e.g. a trajectory
@@ -999,7 +1003,20 @@ def main(args: Optional[List[str]] = None) -> None:
     gc.disable()
 
     rclpy.init(args=args)
-    node: AparkRiseNode = AparkRiseNode()
+
+    # Config comes from YAML file(s) named on the command line, not ROS params.
+    # rise_controller.launch.py passes three --params-file arguments (this
+    # package's tuning YAML + the two shared files from px4_telemetry and
+    # px4_safety_lib); later files win. Running the node directly, pass the
+    # same set yourself.
+    cli: argparse.ArgumentParser = argparse.ArgumentParser(prog='apark_rise_controller')
+    cli.add_argument('--params-file', action='append', dest='params_files', default=[], metavar='PATH',
+                     help='YAML parameter file; repeat to layer files (later files win). At least one required.')
+    parsed, _unused = cli.parse_known_args(args=remove_ros_args(args=sys.argv)[1:])
+    if not parsed.params_files:
+        raise SystemExit('apark_rise_controller: at least one --params-file is required.')
+
+    node: AparkRiseNode = AparkRiseNode(params=load_params(paths=parsed.params_files))
     experiment_succeeded: bool = False
     try:
         rclpy.spin(node=node)

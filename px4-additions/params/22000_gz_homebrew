@@ -46,14 +46,19 @@ param set-default UXRCE_DDS_SYNCT 0  # avoidsf time sync errors in Micro-XRCE-DD
 param set-default NAV_DLL_ACT 0      # disable need for QGC in SITL; otherwise PX4 never reaches "ready" without it
 param set-default SIM_GZ_EN 1 # sim mode (disable by settings to 0 if this were real world!)
 
+# ── Sensors ───────────────────────────────────────────────────────
 param set-default SENS_EN_GPSSIM 1
 param set-default SENS_EN_BAROSIM 1
 param set-default SENS_EN_MAGSIM 1
 
+param set-default EKF2_OF_CTRL 1
+param set-default EKF2_OF_POS_X 0.04440
+param set-default EKF2_OF_POS_Y 0.06670
+param set-default EKF2_OF_POS_Z 0.05080
+
 # Hover throttle. With motorConstant 1.9e-05 in homebrew/model.sdf (models
 # 4x T-Motor U5 KV400 / 15in / 6S, ~2.6 thrust-to-weight), the vehicle
-# actually hovers near 0.55 throttle. The x500 base sets 0.60; that plus
-# the old copied-from-x500 motor constant is why takeoff kept failing.
+# actually hovers near 0.55 throttle.
 # The hover-thrust estimator refines this online at runtime.
 param set-default MPC_THR_HOVER 0.55
 
@@ -65,62 +70,16 @@ param set-default COM_OBL_RC_ACT 4 # land mode on RC failsafe
 param set-default GF_ACTION 5 # land mode on geofence violation
 param set-default COM_OF_LOSS_T 1.0 # s (default: 1.0) exits offboard without a heartbeat for this long
 
+
 # # ── Height Estimation ───────────────────────────────────────────────────────
-# # 2026-08-25: lidar (LW20) and optical flow ripped out of the SDF (see
-# # homebrew/model.sdf) - EKF2_RNG_CTRL 2 forced range to *always* be fused
-# # for height (the "2 = conditional" comment below was wrong; per PX4's own
-# # params_range_finder.yaml, 1 is conditional and 2 is unconditional/always),
-# # and that was the source of repeated large local-z jumps/resets in SITL.
-# # Going back to firmware defaults instead: EKF2_HGT_REF=1 (GPS), and
-# # EKF2_GPS_CTRL/EKF2_BARO_CTRL left unset so their defaults (7 and 1,
-# # respectively) apply - GPS altitude + barometer both fused for height.
-# # All lines below commented out rather than deleted so this is easy to
-# # revert once the collision/height-estimation interplay is sorted out.
-# #
 # # param set-default EKF2_HGT_REF 2
-# #
-# # EKF2_GPS_CTRL bit 1 = GPS altitude fusion. Left ON by default (bitmask 7 =
-# # lon/lat + altitude + velocity), which lets GPS become EKF2's active height
-# # reference behind our backs: checkHeightSensorRefFallback() in EKF2 locks
-# # onto whichever height source goes "healthy" first, and GPS's health check
-# # clears almost instantly while range's conditional-aid check needs several
-# # consecutive stable in-range readings - a timing race GPS reliably wins
-# # whenever the vehicle spends any time sitting on the ground first. When
-# # GPS wins, local z silently reflects raw GPS/AMSL height (anchored to the
-# # park's true ~29m AMSL, not our PX4_HOME_ALT=0 assumption) instead of
-# # range - this is exactly how the -23/-29m z jumps got diagnosed. Clearing
-# # bit 1 (5 = lon/lat + velocity, no altitude) makes GPS structurally
-# # ineligible for height, same spirit as SENS_EN_BAROSIM 0 above: never trust
-# # GPS/baro for the vertical estimate, only ever range.
 # # param set-default EKF2_GPS_CTRL 5
 # #
 # # EKF2_RNG_CTRL 2 = "Enabled" (unconditional/always fused), NOT conditional
-# # as this comment used to claim - see params_range_finder.yaml (1 =
-# # conditional, 2 = always). Matched the real quad's params
-# # (homebrew_1_16_2.params), but with the lidar sensor gone this has no
-# # distance_sensor to fuse anyway.
 # # param set-default EKF2_RNG_CTRL 2
-# #
-# # Real quad's measured LW20 mount offset (metres, FRD, from IMU) - lever-arm
-# # correction for range-height fusion. Never previously copied into this file
-# # or the SDF; the sim's LW20 mount pose still needs to be checked/fixed
-# # separately for the *rotation* PX4's gz bridge requires (must be tagged
-# # ROTATION_DOWNWARD_FACING - see GZBridge.cpp's laserScantoLidarSensorCallback
-# # - or EKF2 will never select it for range fusion regardless of this offset).
 # # param set-default EKF2_RNG_POS_X -0.00635
 # # param set-default EKF2_RNG_POS_Y 0.0539
 # # param set-default EKF2_RNG_POS_Z 0.114
 # #
-# # Optical flow fusion + real quad's measured mount offset (metres, FRD, from
-# # IMU), from homebrew_1_16_2.params. Requires the optical_flow model's mount
-# # pose in the SDF to also be correct for PX4 to accept its measurements -
-# # not yet verified, same caveat as the rangefinder above.
-# # param set-default EKF2_OF_CTRL 1
-# # param set-default EKF2_OF_POS_X 0.04440
-# # param set-default EKF2_OF_POS_Y 0.06670
-# # param set-default EKF2_OF_POS_Z 0.05080
 
-# # ── Real-World Parity (failsafes) ───────────────────────────────────────────
-# param set-default COM_OF_LOSS_T 1.0
-# param set-default GF_ACTION 5
 
