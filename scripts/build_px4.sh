@@ -27,4 +27,4 @@ rm -rf "$PX4_DIR/build"
 echo "[*] Building PX4 SITL ($PX4_MAKE_TARGET, usually about 20 seconds)..."
 make -C "$PX4_DIR" $PX4_MAKE_TARGET
 
-echo "[+] Build complete. Refer back to the README.md for next steps."
+echo "[+] Success! PX4 build complete. Next: scripts/build_ros2_autonomy_stack.sh to build the ROS 2 bridge."

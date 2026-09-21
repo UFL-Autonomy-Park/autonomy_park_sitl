@@ -10,7 +10,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "$SCRIPT_DIR/sitl_env.sh"
 
 echo "############################################################"
-echo "#  [ATTENTION] First-time setup takes about 20 minutes.    #"
+echo "#   [ATTENTION] First-time setup takes about 20 minutes.   #"
 echo "############################################################"
 echo
 
@@ -34,7 +34,13 @@ fi
 _SUDO_KEEPALIVE_PID=$!
 trap 'kill "$_SUDO_KEEPALIVE_PID" 2>/dev/null || true' EXIT
 
-echo "==> [1/10] Installing Git LFS and fetching assets (custom meshes/textures)..."
+echo "==> [1/12] Scanning for latest apt packages..."
+sudo apt-get update -y
+
+echo "==> [2/12] Upgrading apt packages..."
+sudo apt-get upgrade -y
+
+echo "==> [3/12] Installing Git LFS and fetching assets (custom meshes/textures)..."
 if ! command -v git-lfs >/dev/null 2>&1; then
     curl -s https://packagecloud.io/install/repositories/github/git-lfs/script.deb.sh | sudo bash
     sudo apt-get install -y git-lfs
@@ -43,16 +49,16 @@ fi
 git -C "$PROJECT_ROOT" lfs install --local
 git -C "$PROJECT_ROOT" lfs pull
 
-echo "==> [2/10] Initializing and updating submodules (including nested ones, e.g. aero_common's own submodules)..."
+echo "==> [4/12] Initializing and updating submodules (including nested ones, e.g. aero_common's own submodules)..."
 git -C "$PROJECT_ROOT" submodule update --init --recursive
 
-echo "==> [3/10] Installing colcon (needed to build ros2_ws/)..."
+echo "==> [5/12] Installing colcon (needed to build ros2_ws/)..."
 sudo apt-get install -y python3-colcon-common-extensions
 
-echo "==> [4/10] Installing MAVROS..."
+echo "==> [6/12] Installing MAVROS..."
 sudo apt-get install -y ros-humble-mavros ros-humble-mavros-extras ros-humble-mavros-msgs
 
-echo "==> [5/10] Installing MAVROS's GeographicLib geoid dataset..."
+echo "==> [7/12] Installing MAVROS's GeographicLib geoid dataset..."
 # mavros_node's UAS component hard-aborts (SIGABRT, exit -6) at startup if
 # the egm96-5 geoid grid is missing or unreadable, so this must succeed for
 # SITL to work at all.
@@ -75,13 +81,13 @@ if [[ ! -s "$GEOID_FILE" ]] || (( $(stat -c%s "$GEOID_FILE") < 1000000 )); then
     exit 1
 fi
 
-echo "==> [6/10] Installing geodesy (needed by aero_common)..."
+echo "==> [8/12] Installing geodesy (needed by aero_common)..."
 sudo apt-get install -y ros-humble-geodesy
 
-echo "==> [7/10] Verifying PX4-Autopilot checkout..."
+echo "==> [9/12] Verifying PX4-Autopilot checkout..."
 echo "    PX4-Autopilot is ready at $(git -C "$PX4_DIR" describe --tags HEAD 2>/dev/null || git -C "$PX4_DIR" rev-parse --short HEAD)"
 
-echo "==> [8/10] Installing PX4's own SITL build dependencies..."
+echo "==> [10/12] Installing PX4's own SITL build dependencies..."
 sudo "$PX4_DIR/Tools/setup/ubuntu.sh"
 
 # ubuntu.sh above makes its own best-effort attempt at these too, but that
@@ -90,12 +96,12 @@ sudo "$PX4_DIR/Tools/setup/ubuntu.sh"
 # this script started. This is the step that actually matters: installing
 # into that already-active venv, as our own (non-root) user, no --user flag
 # needed (or accepted - pip errors if you pass --user inside a venv).
-echo "==> [9/10] Installing PX4's Python build dependencies into venv_host..."
+echo "==> [11/12] Installing PX4's Python build dependencies into venv_host..."
 pip3 install -r "$PX4_DIR/Tools/setup/requirements.txt"
 
 # mkdir -p (not plain mkdir) so re-running this doesn't fail on an existing
 # build dir - cmake/make are themselves safe to re-run against one.
-echo "==> [10/10] Building Micro-XRCE-DDS-Agent..."
+echo "==> [12/12] Building Micro-XRCE-DDS-Agent..."
 mkdir -p "$PROJECT_ROOT/Micro-XRCE-DDS-Agent/build"
 (
     cd "$PROJECT_ROOT/Micro-XRCE-DDS-Agent/build"
@@ -106,4 +112,4 @@ mkdir -p "$PROJECT_ROOT/Micro-XRCE-DDS-Agent/build"
 sudo ldconfig /usr/local/lib/
 
 echo
-echo "Setup complete. Next: scripts/build_px4.sh to build PX4 SITL."
+echo "Preliminary setup complete. Next: scripts/build_px4.sh to build PX4 SITL."
