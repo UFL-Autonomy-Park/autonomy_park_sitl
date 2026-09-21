@@ -595,7 +595,7 @@ class AparkRiseNode(Node):
                 if not self.freeze_int_z:
                     self.current_integral_control_term[2] += delta_int[2]
                 self.last_control_integrand = current_integrand
-                u = (self.K_P * e) + (self.K_D * e_dot) + self.current_integral_control_term
+                u = qd_ddot + (self.K_P * e) + (self.K_D * e_dot) + self.current_integral_control_term
 
             case "pid":
                 current_integrand: np.ndarray = (self.K_I * e)

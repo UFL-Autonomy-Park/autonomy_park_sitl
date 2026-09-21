@@ -71,15 +71,12 @@ param set-default GF_ACTION 5 # land mode on geofence violation
 param set-default COM_OF_LOSS_T 1.0 # s (default: 1.0) exits offboard without a heartbeat for this long
 
 
-# # ── Height Estimation ───────────────────────────────────────────────────────
-# # param set-default EKF2_HGT_REF 2
-# # param set-default EKF2_GPS_CTRL 5
-# #
-# # EKF2_RNG_CTRL 2 = "Enabled" (unconditional/always fused), NOT conditional
-# # param set-default EKF2_RNG_CTRL 2
-# # param set-default EKF2_RNG_POS_X -0.00635
-# # param set-default EKF2_RNG_POS_Y 0.0539
-# # param set-default EKF2_RNG_POS_Z 0.114
-# #
+# ── Height Estimation ───────────────────────────────────────────────────────
+param set-default EKF2_HGT_REF 1 # (default)
+param set-default EKF2_GPS_CTRL 7 # (default)
+param set-default EKF2_RNG_CTRL 1 # "Enabled" (conditionally fused; default)
+param set-default EKF2_RNG_POS_X -0.00635
+param set-default EKF2_RNG_POS_Y 0.0539
+param set-default EKF2_RNG_POS_Z 0.114
 
 

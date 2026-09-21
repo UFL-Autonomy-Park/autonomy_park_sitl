@@ -807,7 +807,8 @@
            PX4_HOME_ALT comment for why 29.2059, not 0.0 or the real park's
            surveyed AMSL. -->
       <elevation>29.2059</elevation>
-      <heading_deg>-34.5031</heading_deg>
+      <heading_deg>0.0</heading_deg>
+      <!--<heading_deg>-34.5031</heading_deg> -->
     </spherical_coordinates>
   </world>
 </sdf>
