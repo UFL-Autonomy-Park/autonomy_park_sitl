@@ -81,7 +81,7 @@ export PX4_GZ_WORLD=autonomy_park
 export PX4_SIMULATOR=gz
 export PX4_SIM_MODEL=gz_homebrew # gz_ prefix required
 export PX4_SYS_AUTOSTART=22000
-export PX4_GZ_MODEL_POSE="0.0,0,0.5,0,0,0"
+export PX4_GZ_MODEL_POSE="0,0,0.5,0,0,0"
 
 # PX4's `make` config target (see build_px4.sh). Deliberately just
 # "px4_sitl", not "px4_sitl gz_homebrew_autonomy_park" - the gz_<model>_<world>
@@ -89,7 +89,6 @@ export PX4_GZ_MODEL_POSE="0.0,0,0.5,0,0,0"
 # COMMAND runs the px4 binary directly), so naming it here would make a
 # *build* also spawn Gazebo.
 export PX4_MAKE_TARGET="px4_sitl"
-
 export PX4_DIR="$PROJECT_ROOT/PX4-Autopilot"
 export PX4_ADDITIONS_DIR="$PROJECT_ROOT/px4-additions"
 export ROS2_DIR="$PROJECT_ROOT/ros2_ws"

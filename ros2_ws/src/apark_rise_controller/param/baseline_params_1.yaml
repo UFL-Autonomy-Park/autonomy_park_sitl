@@ -3,7 +3,7 @@
     control_frequency_hz: 50.0
     controller_type: baseline
     d_out: 3
-    desired_trajectory: 1
+    desired_trajectory: 2
     init_tol_m: 0.2
     init_z_m_enu: 1.5
     initial_weight_scale_factor: 0.1
@@ -25,12 +25,16 @@
     takeoff_timeout_s: 15.0
     theta_dot_bar: 1000.0
     traj1_alpha_warp: 0.5
+    traj1_center_x_m_enu: 0.0
+    traj1_center_y_m_enu: 0.0
     traj1_center_z_m_enu: 1.5
     traj1_period_s: 30.0
     traj1_x_amp_m_enu: 1.5
     traj1_y_amp_m_enu: 3.0
-    traj1_z_amp_m_enu: 0.25
-    traj2_center_z_m_enu: 0.5
+    traj1_z_amp_m_enu: 0.0
+    traj2_center_x_m_enu: 0.0
+    traj2_center_y_m_enu: 0.0
+    traj2_center_z_m_enu: 1.5
     traj2_petal_radius_m: 2.5
     traj2_target_speed_mps: 1.0
     w_fail: 1000.0

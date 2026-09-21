@@ -25,7 +25,6 @@ jax.config.update("jax_platform_name", "cpu") # Force use of CPU
 jax.config.update("jax_enable_x64", True) # Use 64 bit since all floats to be used are doubles; otherwise XLA recompilation will occur mid-flight
 jax.config.update("jax_compilation_cache_dir", "/tmp/jax_cache")
 
-from jax_resnet import resnet_network
 from apark_rise_controller.proj import discrete_projection, discrete_rate_projection
 from apark_rise_controller.desired_trajectory import TrajectoryGenerator
 
@@ -115,6 +114,7 @@ class AparkRiseNode(Node):
 
         # Safety
         self.acc_vert_max_mps2: float = self._get_param(name='mpc_acc_vert_max_mps2')
+        self.acc_hor_max_mps2: float = self._get_param(name='mpc_acc_hor_max_mps2')
         self.safe_x_min_m_enu: float = self._get_param(name='safety.min_x')
         self.safe_x_max_m_enu: float = self._get_param(name='safety.max_x')
         self.safe_y_min_m_enu: float = self._get_param(name='safety.min_y')
@@ -153,6 +153,17 @@ class AparkRiseNode(Node):
                 self.K_D: float = self.k_1 + self.k_2 + self.k_3
 
             if self.controller_type in ["resnet", "integrated_resnet"]:
+                try:
+                    from jax_resnet import resnet_network
+                except ModuleNotFoundError as e:
+                    raise ModuleNotFoundError(
+                        f"controller_type '{self.controller_type}' requires jax_resnet "
+                        "(resnet_network) from https://github.com/mgardenswartz/resnet - "
+                        "not the unrelated PyPI package of the same name. Install with "
+                        "`pip install \"jax-resnet @ git+https://github.com/mgardenswartz/resnet.git\"` "
+                        "into whichever interpreter this node actually runs under."
+                    ) from e
+
                 self.d_in: int = self._get_param(name='d_in')
 
                 self.theta_hat: jax.Array = jnp.array(object=self._get_param(name='initial_weights'))

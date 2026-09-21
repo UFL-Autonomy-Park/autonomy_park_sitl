@@ -22,6 +22,13 @@ setup(
     license='Apache-2.0',
     install_requires=[
         'setuptools',
+        'jax',
+        'matplotlib',
+        'scipy',
+        # PyPI already has an unrelated package named "jax-resnet" - this
+        # pins the real one (resnet_network, our controls-research resnet)
+        # straight from source so `pip install .`/`-e .` can't grab it.
+        'jax-resnet @ git+https://github.com/mgardenswartz/resnet.git',
     ],
     extras_require={
         'test': [

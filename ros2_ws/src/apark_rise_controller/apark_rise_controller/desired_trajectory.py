@@ -13,6 +13,8 @@ class TrajectoryGenerator:
 
         match self.desired_traj:
             case 1:
+                self.traj1_center_x_m_enu = config['traj1_center_x_m_enu']
+                self.traj1_center_y_m_enu = config['traj1_center_y_m_enu']
                 self.traj1_center_z_m_enu = config['traj1_center_z_m_enu']
                 self.traj1_period_s = config['traj1_period_s']
                 self.traj1_x_amp_m_enu = config['traj1_x_amp_m_enu']
@@ -23,6 +25,8 @@ class TrajectoryGenerator:
                 self._precompute_phases()
                 _ = self._get_traj1_jax(0.0)
             case 2:
+                self.traj2_center_x_m_enu = config['traj2_center_x_m_enu']
+                self.traj2_center_y_m_enu = config['traj2_center_y_m_enu']
                 self.traj2_center_z_m_enu = config['traj2_center_z_m_enu']
                 self.traj2_petal_radius_m = config['traj2_petal_radius_m']
                 self.traj2_target_speed_mps = config['traj2_target_speed_mps']
@@ -79,7 +83,11 @@ class TrajectoryGenerator:
             x_legacy = self.traj1_x_amp_m_enu * jnp.sin(wx * tau_val)
             y_legacy = self.traj1_y_amp_m_enu * jnp.sin(wy * tau_val)
             z_enu = self.traj1_z_amp_m_enu * jnp.sin(wz * tau_val) + self.traj1_center_z_m_enu
-            return jnp.array([y_legacy, -x_legacy, z_enu])
+            return jnp.array([
+                y_legacy + self.traj1_center_x_m_enu,
+                -x_legacy + self.traj1_center_y_m_enu,
+                z_enu,
+            ])
 
         # 3. Apply the exact chain rule
         pos = pos_fn(tau)
@@ -107,8 +115,8 @@ class TrajectoryGenerator:
         def pos_fn(th: jax.Array) -> jax.Array:
             r = self.traj2_petal_radius_m * jnp.cos(2.0 * th)
             return jnp.array([
-                r * jnp.sin(th),
-                -(r * jnp.cos(th)),
+                r * jnp.sin(th) + self.traj2_center_x_m_enu,
+                -(r * jnp.cos(th)) + self.traj2_center_y_m_enu,
                 self.traj2_center_z_m_enu
             ])
 
