@@ -69,19 +69,21 @@ copy_contents() {
 }
 
 # --- PX4 SITL configuration ------------------------------------------------
+# See: https://docs.px4.io/v1.16/en/sim_gazebo_gz/.
 
 # PX4 SITL home position (middle of the Autonomy Park)
 # Set by Max Gardenswartz (required changing since the old one was not perfectly centered on the park)
 export PX4_HOME_LAT=29.628147
 export PX4_HOME_LON=-82.360333
-export PX4_HOME_ALT=29.2059
+export PX4_HOME_ALT=29.2059 # AMSL, taken from plugging the previous two coordinates into a NOAA site
 
 # Custom Gazebo world/model, added via px4-additions/ (see lib/write_px4_with_px4_additions.sh)
-export PX4_GZ_WORLD=autonomy_park
-export PX4_SIMULATOR=gz
-export PX4_SIM_MODEL=gz_homebrew # gz_ prefix required
-export PX4_SYS_AUTOSTART=22000
-export PX4_GZ_MODEL_POSE="0,0,0.5,0,0,0"
+export PX4_GZ_WORLD=autonomy_park # World file (.sdf subsumed) to be used
+export PX4_SIMULATOR=gz # Modern, not Classic
+export PX4_SIM_MODEL=gz_homebrew # gz_$MODEL_YOU_WANT; gz_ prefix required
+export PX4_SYS_AUTOSTART=22000 # Dictates which set of PX4 parameteres get used; if a parameter is unspecified, default for multicopter is used
+export PX4_GZ_MODEL_POSE="-24,0,0.5,0,0,0" # x, y, z in Autonomy Park frame; last three numbers are Euler angles for pose (roll, pitch, yaw in radians)
+# Note: Autonomy Park frame's origin is at middle of park on the floor, +x points away from shed, +y points toward SW 23rd Terrace, and z is up (i.e., a local pseudo-ENU frame)
 
 # PX4's `make` config target (see build_px4.sh). Deliberately just
 # "px4_sitl", not "px4_sitl gz_homebrew_autonomy_park" - the gz_<model>_<world>
@@ -100,7 +102,7 @@ export ROS2_DIR="$PROJECT_ROOT/ros2_ws"
 unset FASTRTPS_DEFAULT_PROFILES_FILE
 unset ROS_DISCOVERY_SERVER
 unset RMW_IMPLEMENTATION
-export ROS_LOCALHOST_ONLY=1 # <-- CRITICAL
+export ROS_LOCALHOST_ONLY=1 # <-- CRITICAL; Read this!
 export ROS_DOMAIN_ID=0
 
 

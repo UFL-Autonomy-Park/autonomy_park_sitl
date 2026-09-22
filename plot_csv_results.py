@@ -21,6 +21,19 @@ import matplotlib.pyplot as plt
 import matplotlib.animation as animation
 
 
+def _apply_topdown_convention(ax) -> None:
+    """Lab's chosen top-down (X-Y plane) viewing convention: +Y left, -X up.
+
+    Callers plot (y, x) instead of (x, y) -- i.e. Y on the horizontal axis,
+    X on the vertical -- then this inverts both, so the tick labels still
+    read true Y/X values, just running in the opposite screen direction.
+    """
+    ax.set_xlabel("Y Position (m)")
+    ax.set_ylabel("X Position (m)")
+    ax.invert_xaxis()
+    ax.invert_yaxis()
+
+
 def _plot_control_diagnostics(
     df: pd.DataFrame,
     output_dir: str,
@@ -154,17 +167,19 @@ def run_post_flight_analysis(
             fig_static.text(0.5, 0.93, "   |   ".join(summary_parts), ha='center', fontsize=12)
 
         # Subplot 1: Top-Down XY View
+        # Plotted as (y, x) with both axes inverted -- not (x, y) uninverted --
+        # so +Y reads left and -X reads up, matching the lab's chosen top-down
+        # viewing convention (see _apply_topdown_convention).
         ax1 = plt.subplot(1, 2, 1)
-        ax1.plot(df['xd'], df['yd'], 'k--', label='Desired Trajectory', alpha=0.7)
-        ax1.plot(df['x'], df['y'], 'b-', label='Actual Flight Path', linewidth=2)
-        ax1.scatter(df['x'].iloc[0], df['y'].iloc[0], color='green', marker='o', s=100, label='Start')
-        ax1.scatter(df['x'].iloc[-1], df['y'].iloc[-1], color='red', marker='X', s=100, label='End')
+        ax1.plot(df['yd'], df['xd'], 'k--', label='Desired Trajectory', alpha=0.7)
+        ax1.plot(df['y'], df['x'], 'b-', label='Actual Flight Path', linewidth=2)
+        ax1.scatter(df['y'].iloc[0], df['x'].iloc[0], color='green', marker='o', s=100, label='Start')
+        ax1.scatter(df['y'].iloc[-1], df['x'].iloc[-1], color='red', marker='X', s=100, label='End')
         ax1.set_title("Top-Down Trajectory (X-Y Plane)")
-        ax1.set_xlabel("X Position (m)")
-        ax1.set_ylabel("Y Position (m)")
         ax1.legend()
         ax1.grid(True)
         ax1.axis('equal')
+        _apply_topdown_convention(ax1)
 
         # Subplot 2: XY Error
         ax2 = plt.subplot(2, 2, 2)
@@ -219,16 +234,15 @@ def run_post_flight_analysis(
         ax_3d.grid(True)
         ax_3d.legend()
 
-        # Top View (XY)
+        # Top View (XY) -- see _apply_topdown_convention
         ax_xy = fig_traj.add_subplot(2, 2, 2)
-        ax_xy.plot(df['xd'], df['yd'], 'k--')
-        ax_xy.scatter(df['xd'].iloc[0], df['yd'].iloc[0], color='green', marker='o', s=50)
-        ax_xy.scatter(df['xd'].iloc[-1], df['yd'].iloc[-1], color='red', marker='X', s=50)
+        ax_xy.plot(df['yd'], df['xd'], 'k--')
+        ax_xy.scatter(df['yd'].iloc[0], df['xd'].iloc[0], color='green', marker='o', s=50)
+        ax_xy.scatter(df['yd'].iloc[-1], df['xd'].iloc[-1], color='red', marker='X', s=50)
         ax_xy.set_title("Top View (XY Plane)")
-        ax_xy.set_xlabel("X (m)")
-        ax_xy.set_ylabel("Y (m)")
         ax_xy.grid(True)
         ax_xy.axis('equal')
+        _apply_topdown_convention(ax_xy)
 
         # Side View (XZ)
         ax_xz = fig_traj.add_subplot(2, 2, 3)
@@ -266,21 +280,22 @@ def run_post_flight_analysis(
         print("[*] Generating animation...")
         fig_anim, ax_anim = plt.subplots(figsize=(8, 8))
         ax_anim.set_title("Top-Down Trajectory Animation (Real-Time)")
-        ax_anim.set_xlabel("X Position (m)")
-        ax_anim.set_ylabel("Y Position (m)")
         ax_anim.grid(True)
         ax_anim.axis('equal')
 
-        # Set static limits based on data bounds with a 10% margin
+        # Set static limits based on data bounds with a 10% margin. Limits are
+        # set in (y, x) plot-axis order here too -- invert_*axis (applied
+        # below) flips direction, not which bound is "min"/"max".
         x_min, x_max = min(df['x'].min(), df['xd'].min()), max(df['x'].max(), df['xd'].max())
         y_min, y_max = min(df['y'].min(), df['yd'].min()), max(df['y'].max(), df['yd'].max())
         margin_x = (x_max - x_min) * 0.1
         margin_y = (y_max - y_min) * 0.1
-        ax_anim.set_xlim(x_min - margin_x, x_max + margin_x)
-        ax_anim.set_ylim(y_min - margin_y, y_max + margin_y)
+        ax_anim.set_xlim(y_min - margin_y, y_max + margin_y)
+        ax_anim.set_ylim(x_min - margin_x, x_max + margin_x)
+        _apply_topdown_convention(ax_anim)
 
-        # Plot static desired trajectory in background
-        ax_anim.plot(df['xd'], df['yd'], 'k--', label='Desired Path', alpha=0.4)
+        # Plot static desired trajectory in background -- (y, x), see above
+        ax_anim.plot(df['yd'], df['xd'], 'k--', label='Desired Path', alpha=0.4)
 
         # Initialize moving elements
         line_actual, = ax_anim.plot([], [], 'b-', linewidth=2, label='Flight Path (5s trail)')
@@ -319,12 +334,12 @@ def run_post_flight_analysis(
             # Calculate start index for the 5-second disappearing trail
             start_idx = max(0, frame - trail_frames)
 
-            # Update trail
-            line_actual.set_data(x_vals[start_idx:frame+1], y_vals[start_idx:frame+1])
+            # Update trail -- (y, x) order, matching ax_anim's convention
+            line_actual.set_data(y_vals[start_idx:frame+1], x_vals[start_idx:frame+1])
 
             # Update leading points
-            point_actual.set_data([x_vals[frame]], [y_vals[frame]])
-            point_desired.set_data([xd_vals[frame]], [yd_vals[frame]])
+            point_actual.set_data([y_vals[frame]], [x_vals[frame]])
+            point_desired.set_data([yd_vals[frame]], [xd_vals[frame]])
 
             # Update stopwatch
             time_text.set_text(f"Elapsed: {video_times[frame]:.2f} s")

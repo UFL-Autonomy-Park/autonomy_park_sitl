@@ -5,6 +5,8 @@ from launch.actions import DeclareLaunchArgument
 from launch.substitutions import LaunchConfiguration
 from launch_ros.actions import Node
 
+NAMESPACE='homebrew_sim_0'
+
 def generate_launch_description():
     # Layers three YAML files onto the node via --params-file arguments (NOT ROS
     # parameters - the node reads YAML directly, see apark_rise_node.py): this
@@ -20,7 +22,7 @@ def generate_launch_description():
     )
     namespace_arg = DeclareLaunchArgument(
         'namespace',
-        default_value='homebrew_0',
+        default_value=NAMESPACE,
         description='Must match the namespace MAVROS was launched under (see singleagent_homebrew_teleop.launch.py).'
     )
 
@@ -34,6 +36,7 @@ def generate_launch_description():
             '--params-file', os.path.join(get_package_share_directory('px4_telemetry'), 'param', 'park_coordinates.yaml'),
             '--params-file', os.path.join(get_package_share_directory('px4_safety_lib'), 'param', 'safety_config.yaml'),
         ],
+        ros_arguments=['--log-level', 'info'],
         output='screen'
     )
 

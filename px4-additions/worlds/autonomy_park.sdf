@@ -1,7 +1,7 @@
 <?xml version="1.0" ?>
 <sdf version="1.9">
   <world name="autonomy_park">
-  <!--  Note: origin is at middle of park on the floor, +x points away from shed, +y points toward SW 23rd Terrace, and z is up (i.e., a local ENU frame) -->
+  <!--  Note: origin is at middle of park on the floor, +x points away from shed, +y points toward SW 23rd Terrace, and z is up (i.e., a local pseudo-ENU frame) -->
     <physics type="ode">
       <max_step_size>0.004</max_step_size>
       <real_time_factor>1.0</real_time_factor>
@@ -796,7 +796,7 @@
       <pose>41.576 -6.144 0 0 0 0</pose>
     </include>
     </model> <!-- end trees -->
-    <!-- Don't touch this unless you know what you're doing and have talked to Max Gardenswartz!-->
+    <!-- Don't touch this unless you know what you're doing or have talked to Max Gardenswartz!-->
     <spherical_coordinates>
       <surface_model>EARTH_WGS84</surface_model>
       <world_frame_orientation>ENU</world_frame_orientation>
@@ -807,8 +807,7 @@
            PX4_HOME_ALT comment for why 29.2059, not 0.0 or the real park's
            surveyed AMSL. -->
       <elevation>29.2059</elevation>
-      <heading_deg>0.0</heading_deg>
-      <!--<heading_deg>-34.5031</heading_deg> -->
+      <heading_deg>-34.5031</heading_deg>
     </spherical_coordinates>
   </world>
 </sdf>

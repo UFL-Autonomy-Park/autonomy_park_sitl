@@ -629,7 +629,7 @@ class AparkRiseNode(Node):
                     if jax_dt > self.control_period_s:
                         self.get_logger().warning(f"Running behind! JAX took {jax_dt*1000:.2f}ms at t={t:.2f}s.")
                     else:
-                        self.get_logger().debug(f"JAX took {jax_dt*1000:.2f}ms.")
+                        self.get_logger().info(f"JAX took {jax_dt*1000:.2f}ms.")
 
                     self._log_theta_saturation(t=t, ball_projected=bool(ball_projected), rate_limited=bool(rate_limited))
 
@@ -785,9 +785,10 @@ class AparkRiseNode(Node):
                 t: float = 0.0
                 dt: float = self.control_period_s
 
-                boundary_err: Optional[str] = None #self.check_safety_boundary(q=q)
+                boundary_err: Optional[str] = self.check_safety_boundary(q=q)
                 if boundary_err is not None:
                     self.cost_J += self.w_fail * ((self.run_length_s - t) ** 2)
+                    self.get_logger().info(f"[ERROR] Boundary exceed in takeoff mode.")
                     self.get_logger().info(f"[RESULT] Final cost = {self.cost_J:.4f} (boundary failure).")
                     raise BoundaryBreachError(boundary_err)
 
@@ -811,14 +812,14 @@ class AparkRiseNode(Node):
                     self.is_control_saturated = True
                     if np.dot(a=e[0:2], b=u[0:2]) > 0.0:
                         self.freeze_int_xy = True
-                    self.get_logger().debug(f"XY saturation at t={t:.2f}s.")
+                    self.get_logger().info(f"XY saturation at t={t:.2f}s.")
 
                 if abs(u[2]) > self.acc_vert_max_mps2:
                     u[2] = self.acc_vert_max_mps2 * np.sign(u[2])
                     self.is_control_saturated = True
                     if np.sign(e[2]) == np.sign(u[2]):
                         self.freeze_int_z = True
-                    self.get_logger().debug(f"Z saturation at t={t:.2f}s.")
+                    self.get_logger().info(f"Z saturation at t={t:.2f}s.")
 
                 self.publish_trajectory_setpoint_acceleration(ax=u[0], ay=u[1], az=u[2])
 
@@ -835,6 +836,7 @@ class AparkRiseNode(Node):
                 boundary_err: Optional[str] = self.check_safety_boundary(q=q)
                 if boundary_err is not None:
                     self.cost_J += self.w_fail * ((self.run_length_s - t) ** 2)
+                    self.get_logger().info(f"[ERROR] Boundary exceed in trajectory-following mode.")
                     self.get_logger().info(f"[RESULT] Final cost = {self.cost_J:.4f} (boundary failure).")
                     raise BoundaryBreachError(boundary_err)
 
@@ -917,14 +919,14 @@ class AparkRiseNode(Node):
                     self.is_control_saturated = True
                     if np.dot(a=e[0:2], b=u[0:2]) > 0.0:
                         self.freeze_int_xy = True
-                    self.get_logger().debug(f"XY saturation at t={t:.2f}s.")
+                    self.get_logger().info(f"XY saturation at t={t:.2f}s.")
 
                 if abs(u[2]) > self.acc_vert_max_mps2:
                     u[2] = self.acc_vert_max_mps2 * np.sign(u[2])
                     self.is_control_saturated = True
                     if np.sign(e[2]) == np.sign(u[2]):
                         self.freeze_int_z = True
-                    self.get_logger().debug(f"Z saturation at t={t:.2f}s.")
+                    self.get_logger().info(f"Z saturation at t={t:.2f}s.")
 
                 self.publish_trajectory_setpoint_acceleration(ax=u[0], ay=u[1], az=u[2])
 

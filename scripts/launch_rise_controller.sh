@@ -12,14 +12,14 @@
 #                anywhere else. Defaults to baseline_params_1.yaml.
 #   namespace  - must match the namespace singleagent_homebrew_teleop.launch.py
 #                gave MAVROS (see launch_ros2_autonomy_stack.sh). Defaults to
-#                homebrew_0.
+#                homebrew_sim_0.
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "$SCRIPT_DIR/sitl_env.sh"
 
 PARAM_FILE="${1:-baseline_params_1.yaml}"
-NAMESPACE="${2:-homebrew_0}"
+NAMESPACE="${2:-homebrew_sim_0}"
 
 # Bare filename -> resolve against this package's own param/ dir; anything
 # that already looks like a path (contains a '/') is used as-is.

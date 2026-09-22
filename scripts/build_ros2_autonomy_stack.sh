@@ -18,7 +18,7 @@ echo "#  generating its message bindings. Later re-builds (after  #"
 echo "#  editing an existing package) are much faster.            #"
 echo "############################################################"
 
-echo "[*] Building ros2_ws/src with colcon..."
+echo "[*] Building ros2_ws/src with colcon (symlink TRUE)..."
 ( cd "$ROS2_DIR" && colcon build --symlink-install )
 
 echo "[+] Build complete. Run scripts/launch_ros2_autonomy_stack.sh to launch it."

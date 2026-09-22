@@ -1,0 +1,27 @@
+/**:
+  ros__parameters:
+    control_freq_hz: 50.0          # rate of the main PID control loop
+    save_data: true
+    run_length_s: 30.0             # overall INIT+TAKEOFF timeout safeguard
+    init_tol_m: 0.2
+    init_z_m_enu: 2.0              # hover altitude to settle at before the step (ENU, positive up)
+
+    # Step input experiment: +x = raw MAVROS East (no apark-frame rotation
+    # applied -- see debugging_node.py's module docstring).
+    step_input_delay_s: 1.0        # extra settle time after TAKEOFF, before the step
+    step_input_duration_s: 5.0     # how long the acceleration is streamed for
+    step_input_accel_x_mps2: 0.0
+    step_input_accel_y_mps2: 2.0
+    step_input_accel_z_mps2: 0.0
+    heartbeat_cutoff_delay_s: 3.0  # coast (zero accel) this long after the step, before landing
+
+    arm_timeout_s: 8.0
+    offboard_mode_heartbeat_freq_hz: 10.0  # must stay > 2 Hz or PX4 will exit OFFBOARD
+    odom_timeout_s: 0.5            # raise OdomTimeoutError if no local_position/pose for this long
+    odom_watchdog_freq_hz: 5.0     # rate at which the pose watchdog checks for staleness
+    mode_publisher_freq_hz: 1.0    # how often to rebublish a mode switch if not accepted
+
+    # Control (position-error -> acceleration-setpoint PID, TAKEOFF/settle only)
+    k_p: 5.0
+    k_i: 0.8
+    k_d: 3.0
