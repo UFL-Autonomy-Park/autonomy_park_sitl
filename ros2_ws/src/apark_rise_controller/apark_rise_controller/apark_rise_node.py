@@ -51,6 +51,9 @@ class ExperimentFinished(Exception):
 class ControlLoopOverrunError(Exception):
     pass
 
+class NamespaceSimModeMismatchError(Exception):
+    pass
+
 def _flatten_params(mapping: Dict[str, Any], prefix: str = "") -> Dict[str, Any]:
     flat: Dict[str, Any] = {}
     for key, value in mapping.items():
@@ -105,6 +108,41 @@ class AparkRiseNode(Node):
         self.init_tol_m: float = self._get_param(name='init_tol_m')
         self.d_out: int = self._get_param(name='d_out')
         self.origin_r: float = self._get_param(name='origin_r')
+        # Gazebo's simulated GPS/compass don't apply the world's heading_deg
+        # to velocity or heading at all (only to position) -- so in sim,
+        # local_position is already apark-frame-aligned and the origin_r
+        # rotation below must be skipped. On real hardware local_position is
+        # genuinely raw MAVROS ENU and needs it. See velocity_callback and
+        # publish_trajectory_setpoint_acceleration.
+        self.sim_mode: bool = self._get_param(name='sim_mode')
+
+        # Guard against launching with a sim_mode/namespace mismatch (e.g. a
+        # real-hardware params file accidentally pointed at a "sim" namespace,
+        # or vice versa) -- given what sim_mode actually gates (skipping the
+        # origin_r rotation), getting this wrong silently applies the wrong
+        # frame to every command/feedback value. 'sim' match is
+        # case-insensitive and substring-based (matches homebrew_sim_0,
+        # SIM_homebrew, etc.).
+        namespace: str = self.get_namespace()
+        namespace_looks_sim: bool = 'sim' in namespace.lower()
+        if self.sim_mode and not namespace_looks_sim:
+            self.get_logger().fatal(
+                f"sim_mode=True but namespace '{namespace}' has no 'sim' in it. "
+                "Refusing to start: this looks like a sim params file launched "
+                "against what looks like a real-hardware namespace."
+            )
+            raise NamespaceSimModeMismatchError(
+                f"sim_mode=True with non-sim-looking namespace '{namespace}'."
+            )
+        if not self.sim_mode and namespace_looks_sim:
+            self.get_logger().fatal(
+                f"sim_mode=False but namespace '{namespace}' contains 'sim'. "
+                "Refusing to start: this looks like a real-hardware params file "
+                "launched against what looks like a sim namespace."
+            )
+            raise NamespaceSimModeMismatchError(
+                f"sim_mode=False with sim-looking namespace '{namespace}'."
+            )
 
         # Desired Trajectory
         if self.desired_trajectory not in [1,2]:
@@ -115,14 +153,14 @@ class AparkRiseNode(Node):
         # Safety
         self.acc_vert_max_mps2: float = self._get_param(name='mpc_acc_vert_max_mps2')
         self.acc_hor_max_mps2: float = self._get_param(name='mpc_acc_hor_max_mps2')
-        self.safe_x_min_m_enu: float = self._get_param(name='safety.min_x')
-        self.safe_x_max_m_enu: float = self._get_param(name='safety.max_x')
-        self.safe_y_min_m_enu: float = self._get_param(name='safety.min_y')
-        self.safe_y_max_m_enu: float = self._get_param(name='safety.max_y')
-        self.safe_z_min_m_enu: float = self._get_param(name='safety.min_z')
-        self.safe_z_max_m_enu: float = self._get_param(name='safety.max_z')
+        self.safe_x_min_m_apark: float = self._get_param(name='safety.min_x')
+        self.safe_x_max_m_apark: float = self._get_param(name='safety.max_x')
+        self.safe_y_min_m_apark: float = self._get_param(name='safety.min_y')
+        self.safe_y_max_m_apark: float = self._get_param(name='safety.max_y')
+        self.safe_z_min_m_apark: float = self._get_param(name='safety.min_z')
+        self.safe_z_max_m_apark: float = self._get_param(name='safety.max_z')
         self.odom_timeout_s: float = self._get_param(name='odom_timeout_s')
-        self.init_z_m_enu: float = self._get_param(name='init_z_m_enu')
+        self.init_z_m_apark: float = self._get_param(name='init_z_m_apark')
         self.odom_watchdog_freq_hz: float = self._get_param(name='odom_watchdog_freq_hz')
         self.mode_cmd_retry_period_s: float = self._get_param(name='mode_cmd_retry_period_s')
         self.takeoff_timeout_s: float = self._get_param(name='takeoff_timeout_s')
@@ -226,11 +264,11 @@ class AparkRiseNode(Node):
         self.freeze_int_xy: bool = False
         self.freeze_int_z: bool = False
         self.initial_position_locked: bool = False
-        self.latest_position_m_enu: Optional[np.ndarray] = None
-        self.latest_velocity_m_enu: Optional[np.ndarray] = None
+        self.latest_position_m_apark: Optional[np.ndarray] = None
+        self.latest_velocity_m_apark: Optional[np.ndarray] = None
 
-        self.init_x_m_enu: float = 0.0
-        self.init_y_m_enu: float = 0.0
+        self.init_x_m_apark: float = 0.0
+        self.init_y_m_apark: float = 0.0
         self.experiment_state: int = ExperimentState.STATE_INIT
         self.t_0: float = 0.0
 
@@ -307,19 +345,19 @@ class AparkRiseNode(Node):
         # Catches a correctly-named-but-dangerously-valued config (e.g. a trajectory
         # amplitude that overruns the safety box) at startup instead of discovering it via
         # a live boundary-breach failsafe mid-flight.
-        if not (self.safe_z_min_m_enu <= self.init_z_m_enu <= self.safe_z_max_m_enu):
-            raise ValueError(f"init_z_m_enu={self.init_z_m_enu} falls outside safe_z bounds [{self.safe_z_min_m_enu}, {self.safe_z_max_m_enu}].")
+        if not (self.safe_z_min_m_apark <= self.init_z_m_apark <= self.safe_z_max_m_apark):
+            raise ValueError(f"init_z_m_apark={self.init_z_m_apark} falls outside safe_z bounds [{self.safe_z_min_m_apark}, {self.safe_z_max_m_apark}].")
 
         num_samples: int = 200
         for i in range(num_samples + 1):
             t: float = self.run_length_s * i / num_samples
             pos, _, _ = self.traj_gen.get_desired_state(t=t)
-            if not (self.safe_x_min_m_enu <= pos[0] <= self.safe_x_max_m_enu):
-                raise ValueError(f"Trajectory x position {pos[0]:.2f}m at t={t:.2f}s falls outside safe_x bounds [{self.safe_x_min_m_enu}, {self.safe_x_max_m_enu}].")
-            if not (self.safe_y_min_m_enu <= pos[1] <= self.safe_y_max_m_enu):
-                raise ValueError(f"Trajectory y position {pos[1]:.2f}m at t={t:.2f}s falls outside safe_y bounds [{self.safe_y_min_m_enu}, {self.safe_y_max_m_enu}].")
-            if not (self.safe_z_min_m_enu <= pos[2] <= self.safe_z_max_m_enu):
-                raise ValueError(f"Trajectory z position {pos[2]:.2f}m at t={t:.2f}s falls outside safe_z bounds [{self.safe_z_min_m_enu}, {self.safe_z_max_m_enu}].")
+            if not (self.safe_x_min_m_apark <= pos[0] <= self.safe_x_max_m_apark):
+                raise ValueError(f"Trajectory x position {pos[0]:.2f}m at t={t:.2f}s falls outside safe_x bounds [{self.safe_x_min_m_apark}, {self.safe_x_max_m_apark}].")
+            if not (self.safe_y_min_m_apark <= pos[1] <= self.safe_y_max_m_apark):
+                raise ValueError(f"Trajectory y position {pos[1]:.2f}m at t={t:.2f}s falls outside safe_y bounds [{self.safe_y_min_m_apark}, {self.safe_y_max_m_apark}].")
+            if not (self.safe_z_min_m_apark <= pos[2] <= self.safe_z_max_m_apark):
+                raise ValueError(f"Trajectory z position {pos[2]:.2f}m at t={t:.2f}s falls outside safe_z bounds [{self.safe_z_min_m_apark}, {self.safe_z_max_m_apark}].")
 
         self.get_logger().info("Trajectory envelope validated against safety boundaries.")
 
@@ -380,30 +418,36 @@ class AparkRiseNode(Node):
         self.in_offboard_mode = (msg.mode == "OFFBOARD")
 
     def pose_callback(self, msg: PoseStamped) -> None:
-        self.latest_position_m_enu = np.array(
+        self.latest_position_m_apark = np.array(
             object=[msg.pose.position.x, msg.pose.position.y, msg.pose.position.z], dtype=np.float64)
         self.ticks_without_pose = 0
 
         if not self.initial_position_locked:
-            self.init_x_m_enu = float(msg.pose.position.x)
-            self.init_y_m_enu = float(msg.pose.position.y)
+            self.init_x_m_apark = float(msg.pose.position.x)
+            self.init_y_m_apark = float(msg.pose.position.y)
             self.initial_position_locked = True
 
     def velocity_callback(self, msg: TwistStamped) -> None:
-        # local_position/velocity_local is raw MAVROS ENU (world frame), not yet rotated
-        # into the "apark" frame the way autonomy_park/pose already is by px4_telemetry --
-        # origin_r replicates that same rotation here so q_dot stays consistent with q.
+        # local_position/velocity_local is raw MAVROS ENU (world frame), not yet
+        # rotated into the "apark" frame the way autonomy_park/pose already is by
+        # px4_telemetry -- origin_r replicates that same rotation here so q_dot
+        # stays consistent with q, but only on real hardware: in sim, Gazebo's
+        # NavSat/Magnetometer plugins never apply heading_deg to velocity/heading
+        # (only to GPS position), so local_position is already apark-frame-aligned
+        # and rotating it again would double-rotate. sim_mode selects which.
         # Mirrors the old mocap node's velocity_callback (see lyla_node_OLD.py) and
         # PX4Teleop's outgoing rotation in reverse.
-        cos_r: float = math.cos(self.origin_r)
-        sin_r: float = math.sin(self.origin_r)
         vx_enu: float = msg.twist.linear.x
         vy_enu: float = msg.twist.linear.y
-        self.latest_velocity_m_enu = np.array(object=[
-            (cos_r * vx_enu) - (sin_r * vy_enu),
-            (sin_r * vx_enu) + (cos_r * vy_enu),
-            msg.twist.linear.z
-        ], dtype=np.float64)
+        if self.sim_mode:
+            vx_apark, vy_apark = vx_enu, vy_enu
+        else:
+            cos_r: float = math.cos(self.origin_r)
+            sin_r: float = math.sin(self.origin_r)
+            vx_apark = (cos_r * vx_enu) - (sin_r * vy_enu)
+            vy_apark = (sin_r * vx_enu) + (cos_r * vy_enu)
+        self.latest_velocity_m_apark = np.array(
+            object=[vx_apark, vy_apark, msg.twist.linear.z], dtype=np.float64)
         self.ticks_without_velocity = 0
 
     def odom_watchdog_callback(self) -> None:
@@ -441,16 +485,20 @@ class AparkRiseNode(Node):
         self.set_mode_client.call_async(request=request)
 
     def publish_trajectory_setpoint_acceleration(self, ax: float, ay: float, az: float) -> None:
-        if self.latest_position_m_enu is None:
+        if self.latest_position_m_apark is None:
             self.get_logger().warning(f"Ignoring setpoint since there has been no pose yet.")
             return
 
-        # Un-rotate the apark-frame acceleration command back into MAVROS's raw ENU frame
-        # before publishing -- the exact inverse of velocity_callback's rotation.
-        cos_r: float = math.cos(self.origin_r)
-        sin_r: float = math.sin(self.origin_r)
-        ax_enu: float = (cos_r * ax) + (sin_r * ay)
-        ay_enu: float = -(sin_r * ax) + (cos_r * ay)
+        # Un-rotate the apark-frame acceleration command back into MAVROS's raw
+        # ENU frame before publishing -- the exact inverse of velocity_callback's
+        # rotation, gated the same way (skipped in sim; see there for why).
+        if self.sim_mode:
+            ax_enu, ay_enu = ax, ay
+        else:
+            cos_r: float = math.cos(self.origin_r)
+            sin_r: float = math.sin(self.origin_r)
+            ax_enu = (cos_r * ax) + (sin_r * ay)
+            ay_enu = -(sin_r * ax) + (cos_r * ay)
 
         msg: PositionTarget = PositionTarget()
         msg.header.stamp = self.get_clock().now().to_msg()
@@ -548,18 +596,18 @@ class AparkRiseNode(Node):
             self.get_logger().error(f"Failed to write CSV: {e}")
 
     def check_safety_boundary(self, q: np.ndarray) -> Optional[str]:
-        if not (self.safe_x_min_m_enu <= q[0] <= self.safe_x_max_m_enu):
-            return f"X position {q[0]:.2f} breached bounds [{self.safe_x_min_m_enu}, {self.safe_x_max_m_enu}]."
-        if not (self.safe_y_min_m_enu <= q[1] <= self.safe_y_max_m_enu):
-            return f"Y position {q[1]:.2f} breached bounds [{self.safe_y_min_m_enu}, {self.safe_y_max_m_enu}]."
-        if not (self.safe_z_min_m_enu <= q[2] <= self.safe_z_max_m_enu):
-            return f"Z position {q[2]:.2f} breached bounds [{self.safe_z_min_m_enu}, {self.safe_z_max_m_enu}]."
+        if not (self.safe_x_min_m_apark <= q[0] <= self.safe_x_max_m_apark):
+            return f"X position {q[0]:.2f} breached bounds [{self.safe_x_min_m_apark}, {self.safe_x_max_m_apark}]."
+        if not (self.safe_y_min_m_apark <= q[1] <= self.safe_y_max_m_apark):
+            return f"Y position {q[1]:.2f} breached bounds [{self.safe_y_min_m_apark}, {self.safe_y_max_m_apark}]."
+        if not (self.safe_z_min_m_apark <= q[2] <= self.safe_z_max_m_apark):
+            return f"Z position {q[2]:.2f} breached bounds [{self.safe_z_min_m_apark}, {self.safe_z_max_m_apark}]."
         return None
 
     def get_desired_state(self, t: float) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
         if self.experiment_state == ExperimentState.STATE_TAKEOFF:
             # During takeoff, hold exactly above where it initialized
-            return (np.array(object=[self.init_x_m_enu, self.init_y_m_enu, self.init_z_m_enu], dtype=np.float64),
+            return (np.array(object=[self.init_x_m_apark, self.init_y_m_apark, self.init_z_m_apark], dtype=np.float64),
                     np.zeros(shape=3, dtype=np.float64), np.zeros(shape=3, dtype=np.float64))
 
         return self.traj_gen.get_desired_state(t=t)
@@ -595,7 +643,7 @@ class AparkRiseNode(Node):
                 if not self.freeze_int_z:
                     self.current_integral_control_term[2] += delta_int[2]
                 self.last_control_integrand = current_integrand
-                u = qd_ddot + (self.K_P * e) + (self.K_D * e_dot) + self.current_integral_control_term
+                u = (self.K_P * e) + (self.K_D * e_dot) + self.current_integral_control_term
 
             case "pid":
                 current_integrand: np.ndarray = (self.K_I * e)
@@ -707,7 +755,7 @@ class AparkRiseNode(Node):
             )
 
     def _control_timer_tick(self) -> None:
-        if self.latest_position_m_enu is None or self.latest_velocity_m_enu is None: return
+        if self.latest_position_m_apark is None or self.latest_velocity_m_apark is None: return
         current_timestamp_s: float = self.get_clock().now().nanoseconds / 1e9
 
         match self.experiment_state:
@@ -748,7 +796,7 @@ class AparkRiseNode(Node):
                         self.last_mode_cmd_time_s = current_timestamp_s
                 else:
                     if self.is_armed:
-                        self.get_logger().info(f"ARMED & OFFBOARD validated. Initializing takeoff to z={self.init_z_m_enu:.2f}m (ENU).")
+                        self.get_logger().info(f"ARMED & OFFBOARD validated. Initializing takeoff to z={self.init_z_m_apark:.2f}m (apark frame).")
                         self.reset_integral()
                         self.experiment_state = ExperimentState.STATE_TAKEOFF
                         self.takeoff_entry_time_s = current_timestamp_s
@@ -766,15 +814,15 @@ class AparkRiseNode(Node):
                 # Check the takeoff-settled transition before anything else -- the fixed
                 # hold target get_desired_state() uses during STATE_TAKEOFF doesn't depend
                 # on the trajectory clock, so there's nothing else to update first.
-                q: np.ndarray = self.latest_position_m_enu
-                q_dot: np.ndarray = self.latest_velocity_m_enu
+                q: np.ndarray = self.latest_position_m_apark
+                q_dot: np.ndarray = self.latest_velocity_m_apark
 
                 if (current_timestamp_s - self.takeoff_entry_time_s) > self.takeoff_timeout_s:
                     self.cost_J += self.w_fail * (self.run_length_s ** 2)
                     self.get_logger().info(f"[RESULT] Final cost = {self.cost_J:.4f} (takeoff timeout).")
                     raise FailsafeTriggeredError("Failed to reach takeoff position within timeout.")
 
-                e_takeoff: np.ndarray = np.array(object=[self.init_x_m_enu, self.init_y_m_enu, self.init_z_m_enu], dtype=np.float64) - q
+                e_takeoff: np.ndarray = np.array(object=[self.init_x_m_apark, self.init_y_m_apark, self.init_z_m_apark], dtype=np.float64) - q
                 if np.linalg.norm(e_takeoff) <= self.init_tol_m:
                     self.experiment_state = ExperimentState.STATE_FOLLOW_TRAJ
                     # Reset t_0 so the trajectory clock starts at exactly 0.0 now
@@ -827,11 +875,11 @@ class AparkRiseNode(Node):
                 if not self.in_offboard_mode:
                     raise FailsafeTriggeredError("PX4 left OFFBOARD mode during SITL simulation (following trajectory).")
 
-                q: np.ndarray = self.latest_position_m_enu
+                q: np.ndarray = self.latest_position_m_apark
                 t: float = current_timestamp_s - self.t_0
                 dt: float = t - self.last_t_s
 
-                q_dot: np.ndarray = self.latest_velocity_m_enu
+                q_dot: np.ndarray = self.latest_velocity_m_apark
 
                 boundary_err: Optional[str] = self.check_safety_boundary(q=q)
                 if boundary_err is not None:

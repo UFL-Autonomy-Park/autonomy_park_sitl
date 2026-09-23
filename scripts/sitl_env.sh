@@ -95,17 +95,6 @@ export PX4_DIR="$PROJECT_ROOT/PX4-Autopilot"
 export PX4_ADDITIONS_DIR="$PROJECT_ROOT/px4-additions"
 export ROS2_DIR="$PROJECT_ROOT/ros2_ws"
 
-# --- ROS 2 DDS configuration ------------------------------------------------
-# VERY IMPORTANT: makes sure sim topics do not get published to real robots
-# If you cannot see your real robot topics, open a new terminal that hasn't sourced
-# set_env.sh. Understanding this is key to ROS 2 networking!
-unset FASTRTPS_DEFAULT_PROFILES_FILE
-unset ROS_DISCOVERY_SERVER
-unset RMW_IMPLEMENTATION
-export ROS_LOCALHOST_ONLY=1 # <-- CRITICAL; Read this!
-export ROS_DOMAIN_ID=0
-
-
 # --- Python virtual environment ---------------------------------------------
 #
 # PX4's build system needs several Python packages (Tools/setup/requirements.txt)

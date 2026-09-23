@@ -37,21 +37,21 @@ class TrajectoryGenerator:
 
         match self.desired_traj:
             case 1:
-                self.traj1_center_x_m_enu = config['traj1_center_x_m_enu']
-                self.traj1_center_y_m_enu = config['traj1_center_y_m_enu']
-                self.traj1_center_z_m_enu = config['traj1_center_z_m_enu']
+                self.traj1_center_x_m_apark = config['traj1_center_x_m_apark']
+                self.traj1_center_y_m_apark = config['traj1_center_y_m_apark']
+                self.traj1_center_z_m_apark = config['traj1_center_z_m_apark']
                 self.traj1_period_s = config['traj1_period_s']
-                self.traj1_x_amp_m_enu = config['traj1_x_amp_m_enu']
-                self.traj1_y_amp_m_enu = config['traj1_y_amp_m_enu']
-                self.traj1_z_amp_m_enu = config['traj1_z_amp_m_enu']
+                self.traj1_x_amp_m_apark = config['traj1_x_amp_m_apark']
+                self.traj1_y_amp_m_apark = config['traj1_y_amp_m_apark']
+                self.traj1_z_amp_m_apark = config['traj1_z_amp_m_apark']
                 self.traj1_alpha_warp = config['traj1_alpha_warp']
                 self.traj1_warp_c = 1.0 / math.sqrt(1.0 - self.traj1_alpha_warp) if self.traj1_alpha_warp < 1.0 else 1.0
                 self._precompute_phases()
                 _ = self._get_traj1_jax(0.0)
             case 2:
-                self.traj2_center_x_m_enu = config['traj2_center_x_m_enu']
-                self.traj2_center_y_m_enu = config['traj2_center_y_m_enu']
-                self.traj2_center_z_m_enu = config['traj2_center_z_m_enu']
+                self.traj2_center_x_m_apark = config['traj2_center_x_m_apark']
+                self.traj2_center_y_m_apark = config['traj2_center_y_m_apark']
+                self.traj2_center_z_m_apark = config['traj2_center_z_m_apark']
                 self.traj2_petal_radius_m = config['traj2_petal_radius_m']
                 self.traj2_target_speed_mps = config['traj2_target_speed_mps']
                 self._precompute_phases()
@@ -101,7 +101,7 @@ class TrajectoryGenerator:
 
     @partial(jax.jit, static_argnums=(0,))
     def _get_traj1_jax(self, t: float) -> Tuple[jax.Array, jax.Array, jax.Array]:
-        """Figure-eight: phi(tau) in ENU, tau(t) from the warped-time ODE above."""
+        """Figure-eight: phi(tau) in the apark frame, tau(t) from the warped-time ODE above."""
         # 1. Look up the exact phase (tau) for the current time
         tau = jnp.interp(t, self.t_grid_1, self.tau_grid)
 
@@ -113,18 +113,19 @@ class TrajectoryGenerator:
         tau_dot = self.traj1_warp_c * (1.0 - self.traj1_alpha_warp * (jnp.sin(w * tau)**2))
         tau_ddot = -2.0 * self.traj1_warp_c * self.traj1_alpha_warp * w * jnp.sin(w * tau) * jnp.cos(w * tau) * tau_dot
 
-        # phi(tau): a standard Lissajous figure-eight, directly in ENU -- no
-        # separate axis-rotation step. X traces the single-loop (long) axis
-        # at rate w; Y traces the double-loop (short) axis at rate 2w, with
-        # the sign below fixing the figure-eight's orientation (crossing at
-        # the center, lobes opening toward +/-X). Z gets an independent
-        # out-of-plane wobble at 4w. jax.jacfwd differentiates this closed
-        # form exactly, so vel/acc come out already in ENU too.
+        # phi(tau): a standard Lissajous figure-eight, directly in the apark
+        # frame -- no separate axis-rotation step. X traces the single-loop
+        # (long) axis at rate w; Y traces the double-loop (short) axis at rate
+        # 2w, with the sign below fixing the figure-eight's orientation
+        # (crossing at the center, lobes opening toward +/-X). Z gets an
+        # independent out-of-plane wobble at 4w. jax.jacfwd differentiates
+        # this closed form exactly, so vel/acc come out already in the apark
+        # frame too.
         def pos_fn(tau_val: jax.Array) -> jax.Array:
-            x_enu = self.traj1_x_amp_m_enu * jnp.sin(w * tau_val) + self.traj1_center_x_m_enu
-            y_enu = -self.traj1_y_amp_m_enu * jnp.sin(2.0 * w * tau_val) + self.traj1_center_y_m_enu
-            z_enu = self.traj1_z_amp_m_enu * jnp.sin(4.0 * w * tau_val) + self.traj1_center_z_m_enu
-            return jnp.array([x_enu, y_enu, z_enu])
+            x_apark = self.traj1_x_amp_m_apark * jnp.sin(w * tau_val) + self.traj1_center_x_m_apark
+            y_apark = -self.traj1_y_amp_m_apark * jnp.sin(2.0 * w * tau_val) + self.traj1_center_y_m_apark
+            z_apark = self.traj1_z_amp_m_apark * jnp.sin(4.0 * w * tau_val) + self.traj1_center_z_m_apark
+            return jnp.array([x_apark, y_apark, z_apark])
 
         # 3. Apply the exact chain rule
         pos = pos_fn(tau)
@@ -137,7 +138,7 @@ class TrajectoryGenerator:
 
     @partial(jax.jit, static_argnums=(0,))
     def _get_traj2_jax(self, t: float) -> Tuple[jax.Array, jax.Array, jax.Array]:
-        """Rose/petal curve: phi(theta) in ENU, theta(t) from the constant-speed ODE above."""
+        """Rose/petal curve: phi(theta) in the apark frame, theta(t) from the constant-speed ODE above."""
         # 1. Look up the exact phase (theta) for the current time
         theta = jnp.interp(t, self.t_grid_2, self.theta_grid)
 
@@ -149,14 +150,14 @@ class TrajectoryGenerator:
         theta_ddot = - (3.0 * (self.traj2_target_speed_mps**2) * sin_4theta) / ((self.traj2_petal_radius_m**2) * (f_theta**2))
 
         # phi(theta): a 4-petal rose r = R*cos(2*theta) in polar form, mapped
-        # into ENU as (r*sin(theta), -r*cos(theta)) so the first petal points
-        # toward +X rather than the bare-polar convention's +Y.
+        # into the apark frame as (r*sin(theta), -r*cos(theta)) so the first
+        # petal points toward +X rather than the bare-polar convention's +Y.
         def pos_fn(th: jax.Array) -> jax.Array:
             r = self.traj2_petal_radius_m * jnp.cos(2.0 * th)
             return jnp.array([
-                r * jnp.sin(th) + self.traj2_center_x_m_enu,
-                -(r * jnp.cos(th)) + self.traj2_center_y_m_enu,
-                self.traj2_center_z_m_enu
+                r * jnp.sin(th) + self.traj2_center_x_m_apark,
+                -(r * jnp.cos(th)) + self.traj2_center_y_m_apark,
+                self.traj2_center_z_m_apark
             ])
 
         # 3. Apply the exact chain rule
@@ -169,7 +170,7 @@ class TrajectoryGenerator:
         return pos, vel, acc
 
     def get_desired_state(self, t: float) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
-        """Desired (position, velocity, acceleration) in ENU at time t, all exact."""
+        """Desired (position, velocity, acceleration) in the apark frame at time t, all exact."""
         match self.desired_traj:
             case 1:
                 pos, vel, acc = self._get_traj1_jax(t)

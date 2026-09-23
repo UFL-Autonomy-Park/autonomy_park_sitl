@@ -22,16 +22,11 @@ import matplotlib.animation as animation
 
 
 def _apply_topdown_convention(ax) -> None:
-    """Lab's chosen top-down (X-Y plane) viewing convention: +Y left, -X up.
-
-    Callers plot (y, x) instead of (x, y) -- i.e. Y on the horizontal axis,
-    X on the vertical -- then this inverts both, so the tick labels still
-    read true Y/X values, just running in the opposite screen direction.
+    """Lab's chosen top-down (X-Y plane) viewing convention: +Y left, +X up.
     """
     ax.set_xlabel("Y Position (m)")
     ax.set_ylabel("X Position (m)")
     ax.invert_xaxis()
-    ax.invert_yaxis()
 
 
 def _plot_control_diagnostics(
@@ -302,6 +297,19 @@ def run_post_flight_analysis(
         point_actual, = ax_anim.plot([], [], 'ro', markersize=8, label='Quadcopter')
         point_desired, = ax_anim.plot([], [], 'go', markerfacecolor='none', markersize=10, markeredgewidth=2, label='Target Position')
 
+        # Commanded-acceleration direction arrow, rooted at the quadcopter dot.
+        # ux_mps2/uy_mps2 are already in the same (apark) frame as x/y, so
+        # this needs the same (y, x) swap as everything else in this plot.
+        # Normalized to a fixed visual length -- only direction is shown,
+        # since raw accel magnitude varies too much to stay legible at a
+        # fixed arrow size -- so you can visually check the controller is
+        # actually pushing toward the desired trajectory.
+        accel_arrow = ax_anim.quiver(
+            [0.0], [0.0], [0.0], [0.0],
+            angles='xy', scale_units='xy', scale=1, color='orange', width=0.008,
+            zorder=5, label='Commanded Accel (direction)'
+        )
+
         # Initialize Stopwatch (Anchored to top-left of the axes)
         time_text = ax_anim.text(0.03, 0.95, '', transform=ax_anim.transAxes, fontsize=12,
                                  fontweight='bold', bbox=dict(facecolor='white', alpha=0.8, edgecolor='black'))
@@ -319,6 +327,17 @@ def run_post_flight_analysis(
         xd_vals = np.interp(video_times, df['Time_s'], df['xd'])
         yd_vals = np.interp(video_times, df['Time_s'], df['yd'])
 
+        # Commanded acceleration, normalized to a unit vector per frame (zero
+        # where the commanded accel is ~0, rather than an arbitrary direction).
+        ux_vals = np.interp(video_times, df['Time_s'], df['ux_mps2'])
+        uy_vals = np.interp(video_times, df['Time_s'], df['uy_mps2'])
+        u_norm = np.hypot(ux_vals, uy_vals)
+        has_accel = u_norm > 1e-9
+        u_norm_safe = np.where(has_accel, u_norm, 1.0)
+        ux_hat = np.where(has_accel, ux_vals / u_norm_safe, 0.0)
+        uy_hat = np.where(has_accel, uy_vals / u_norm_safe, 0.0)
+        arrow_len = 0.15 * max(x_max - x_min, y_max - y_min)
+
         # Trail mathematics
         trail_length_seconds = 5.0
         trail_frames = int(trail_length_seconds * fps)
@@ -328,7 +347,9 @@ def run_post_flight_analysis(
             point_actual.set_data([], [])
             point_desired.set_data([], [])
             time_text.set_text('')
-            return line_actual, point_actual, point_desired, time_text
+            accel_arrow.set_offsets(np.array([[0.0, 0.0]]))
+            accel_arrow.set_UVC(0.0, 0.0)
+            return line_actual, point_actual, point_desired, time_text, accel_arrow
 
         def update(frame):
             # Calculate start index for the 5-second disappearing trail
@@ -341,10 +362,15 @@ def run_post_flight_analysis(
             point_actual.set_data([y_vals[frame]], [x_vals[frame]])
             point_desired.set_data([yd_vals[frame]], [xd_vals[frame]])
 
+            # Update commanded-accel arrow -- (y, x) order to match, base at
+            # the quadcopter dot, direction/length from ux_hat/uy_hat.
+            accel_arrow.set_offsets(np.array([[y_vals[frame], x_vals[frame]]]))
+            accel_arrow.set_UVC(uy_hat[frame] * arrow_len, ux_hat[frame] * arrow_len)
+
             # Update stopwatch
             time_text.set_text(f"Elapsed: {video_times[frame]:.2f} s")
 
-            return line_actual, point_actual, point_desired, time_text
+            return line_actual, point_actual, point_desired, time_text, accel_arrow
 
         anim = animation.FuncAnimation(
             fig_anim, update, frames=len(video_times),
