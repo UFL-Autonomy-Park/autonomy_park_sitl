@@ -85,9 +85,6 @@
       <rotorVelocitySlowdownSim>10</rotorVelocitySlowdownSim>
       <motorType>velocity</motorType>
     </plugin>
-    <!--<plugin filename="MotorFailurePlugin"
-      name="gz::sim::systems::MotorFailureSystem">
-    </plugin>-->
 
     <!-- Downward optical flow and lidar disabled (2026-08-25): both were
     fighting the GPS+baro height estimate (EKF2_RNG_CTRL forcing range as
@@ -96,7 +93,8 @@
     restored later once the underlying EKF height-source fusion is sorted
     out. See px4-additions/params/22000_gz_homebrew's Height Estimation
     section for the matching EKF2_* param changes. -->
-    <!--
+    <!-- 
+    
     <include merge='true'>
       <uri>model://optical_flow</uri>
       <pose relative_to="base_link">0.03 0 -0.1 0 0 0</pose>
@@ -134,7 +132,7 @@
         </inertia>
       </inertial>
       <sensor name='lidar' type='gpu_lidar'>
-        <pose>0 0 0 3.14 0 0</pose>
+        <pose>0 0 0 3.14 0 0</pose> 
         <update_rate>50</update_rate>
         <ray>
           <scan>
@@ -151,8 +149,9 @@
               <max_angle>0</max_angle>
             </vertical>
           </scan>
-          <range>
-            <min>0.1</min>
+          Range and resolution taken from https://www.documents.lightware.co.za/LW20%20-%20LiDAR%20Manual%20-%20Rev%2012.pdf 
+          <range> 
+            <min>0.2</min>
             <max>100.0</max>
             <resolution>0.01</resolution>
           </range>
@@ -160,7 +159,7 @@
         <always_on>1</always_on>
         <visualize>true</visualize>
       </sensor>
-    </link>
+    </link>-->
     
 
     <!-- ZED 2 stand-in: no ZED 2 gz model exists yet so reusing OakD-Lite's RGB + depth_camera sensors (x500_depth's pattern/pose) -->

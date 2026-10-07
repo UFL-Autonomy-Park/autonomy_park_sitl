@@ -53,6 +53,9 @@ fix that and re-run:
 ./scripts/init.sh
 ```
 
+> [!WARNING]
+> Make source your environment variable `GZ_SIM_RESOURCE_PATH` (if set) does not have any models with the same name as those under px4-additions. Else, anything under px4-additions is ignored in the next step. 
+
 Rebuilds PX4 SITL from a clean state (about 20 seconds) — re-run after
 changing anything under `px4-additions/`:
 

@@ -51,12 +51,21 @@ param set-default SENS_EN_GPSSIM 1
 param set-default SENS_EN_BAROSIM 1
 param set-default SENS_EN_MAGSIM 1
 
+# ── GNSS/GPS ────────────────────
+# param set-default UAVCAN_ENABLE 2 # Sensors Automatic Config <-- ignored by Gazebo
+# param set-default EKF2_GPS_POS_X 0.010
+# param set-default EKF2_GPS_POS_Y 0.000
+# param set-default EKF2_GPS_POS_Z 0.217
+
+# ── Optical Flow (Horizontal Velocity Estimates) ────────────────────
 param set-default EKF2_OF_CTRL 1
+# param set-default SENS_EN_PWM3901 1 # Enabled PWM3901 Optical Flow <-- ignored by Gazebo
 param set-default EKF2_OF_POS_X 0.04440
 param set-default EKF2_OF_POS_Y 0.06670
 param set-default EKF2_OF_POS_Z 0.05080
 
-# Hover throttle. With motorConstant 1.9e-05 in homebrew/model.sdf (models
+# ──  Hover Throttle ────────────────────
+# With motorConstant 1.9e-05 in homebrew/model.sdf (models
 # 4x T-Motor U5 KV400 / 15in / 6S, ~2.6 thrust-to-weight), the vehicle
 # actually hovers near 0.55 throttle.
 # The hover-thrust estimator refines this online at runtime.
@@ -70,13 +79,17 @@ param set-default COM_OBL_RC_ACT 4 # land mode on RC failsafe
 param set-default GF_ACTION 5 # land mode on geofence violation
 param set-default COM_OF_LOSS_T 1.0 # s (default: 1.0) exits offboard without a heartbeat for this long
 
-
 # ── Height Estimation ───────────────────────────────────────────────────────
-param set-default EKF2_HGT_REF 1 # (default)
+param set-default EKF2_HGT_REF 1 # (default; GPS z) <-- CRITICAL; Brandon and Max debated about this
 param set-default EKF2_GPS_CTRL 7 # (default)
-param set-default EKF2_RNG_CTRL 1 # "Enabled" (conditionally fused; default)
+
+# ── Downward-facing LiDAR ───────────────────────────────────────────────────────
+param set-default EKF2_RNG_CTRL 1 # Broken as of 9-23-2026
+# param set-default SENS_EN_SF1XX 6 # SF/LW20/c <-- ignored by Gazebo
 param set-default EKF2_RNG_POS_X -0.00635
 param set-default EKF2_RNG_POS_Y 0.0539
 param set-default EKF2_RNG_POS_Z 0.114
 
+# ── MAVROS ───────────────────────────────────────────────────────
+param set-default MAV_SYS_ID 1
 

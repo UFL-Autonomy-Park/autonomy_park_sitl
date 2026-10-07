@@ -9,6 +9,7 @@
       <gravity>true</gravity>
       <velocity_decay/>
 
+      <!-- Taken from Mingyuan Gao's SOLIDWORKS model--->
       <inertial>
         <mass>2.27304650076778</mass>
         <inertia>
@@ -41,41 +42,8 @@
            Everything that can touch the ground is either box-on-flat-plane
            (the pod, on the flight-cage floor) or a sphere (the feet, which
            are what touch on the hill).
-
-           Why spheres for the feet, not flat skid bars:
-           The hill is a Bullet heightfield (confirmed in the gz server log:
-           "DART Bullet heightfield ...") triangulated at ~5-7 cm/pixel,
-           local slopes up to ~16 deg. A thin flat box spanning several of
-           those triangles on a slope hits the classic internal-edge
-           problem - Bullet hands back contacts with the wrong triangle's
-           normal, some pointing INTO the surface. The skid then works its
-           way in and wedges ("forks into the ground"), and it does not
-           come back out: this stack (gz-physics 7.8 dartsim plugin,
-           DART 6.13) does NOT read <surface><contact><ode> min_depth or
-           max_vel - checked the plugin binaries - so DART's own contact
-           constraint governs penetration recovery, and its default is
-           weak: observed behavior is a deeply-penetrated body easing out
-           over many seconds ("stuck on takeoff / slowly rises / then
-           catapults when it finally pops free"). PX4's land detector flaps
-           takeoff<->landed the whole time (see px4 log).
-           x500 gets away with flat skid bars only because its geometry
-           barely penetrates: ~20 cm of body clearance, tiny skid tips, an
-           angled-leg truss. A sphere vs a triangle mesh has no edges to
-           catch - the contact normal is always (sphere_center - surface),
-           well-defined regardless of triangulation - so penetration stays
-           shallow and DART's weak recovery is enough.
-
-           Geometry from base_link.stl vertex extents:
-             pod  (z ~ 0)     : dense body ~0.20 x 0.20 -> 0.22 box,
-                                raised to z +0.02 so its underside (z -0.04)
-                                clears a 16 deg slope with the feet planted.
-             feet (z ~ -0.16) : mesh skid pair, y = +/-0.18, x = +/-0.09,
-                                mesh underside z = -0.1625. Sphere r 0.03,
-                                centers at z -0.1325 -> undersides at -0.1625.
-           Model <pose> z is 0.162, so foot undersides sit at world z = 0 at
-           rest (flush, no spawn interpenetration).
-           <surface><contact><ode> kept only to mirror x500_base; it is
-           inert here (see above). Friction = ode defaults (mu 1). -->
+           Designed to minimize any oddities with collision.
+           -->
       <collision name="base_link_collision_pod">
         <pose>0 0 0.02 0 0 0</pose>
         <geometry>
@@ -190,7 +158,7 @@
         <update_rate>100</update_rate>
         <magnetometer>
           <!-- 3mgauss RMS: NOTE: noise is in tesla but sensor reports data in gauss -->
-          <!-- Noise modeled after IIS2MDC -->
+          <!-- Noise modeled after IIS2MDC (from the x500 model)-->
           <x>
             <noise type="gaussian">
               <stddev>0.0001</stddev>
@@ -213,7 +181,7 @@
         <update_rate>250</update_rate>
         <imu>
           <angular_velocity>
-            <!-- Noise modeled after IIM42653 -->
+            <!-- Noise modeled after IIM42653 (from the x500 model)-->
             <!-- 0.05 deg/s converted to rad/s -->
             <x>
               <noise type="gaussian">
@@ -235,7 +203,7 @@
             </z>
           </angular_velocity>
           <linear_acceleration>
-            <!-- Noise modeled after IIM42653 -->
+            <!-- Noise modeled after IIM42653 (from the x500 model) -->
             <!-- X & Y axis: 0.65 mg-rms converted to m/ss -->
             <x>
               <noise type="gaussian">
@@ -262,6 +230,53 @@
       <sensor name="navsat_sensor" type="navsat">
         <always_on>1</always_on>
         <update_rate>30</update_rate>
+        <!-- RTK-level noise, as a diagnostic test for the GPS Horizontal Pos
+             Drift preflight failure (2026-09-25): if this doesn't change
+             pass/fail behavior, the drift isn't coming from GPS measurement
+             noise/units, and is a real sustained position-derivative
+             somewhere upstream (physics settling, lever-arm/attitude
+             coupling, or a Gazebo NavSat timing bug), not this sensor's
+             noise model. horizontal stddev is in DEGREES not meters (see
+             NavSatSensor.cc), converted via this world's origin latitude
+             (autonomy_park.sdf: 29.628147 deg N, ~103784 m/deg average of
+             lat/lon scale factors there). Set every stddev to 0 to go back
+             to noiseless. Do NOT comment this block out: XML comments don't
+             nest, and doing so breaks the whole file's parsing. -->
+        <navsat>
+          <position_sensing>
+            <horizontal>
+              <!-- 2cm 1-sigma horizontal (RTK-level): 0.02 / 103784 m/deg -->
+              <noise type="gaussian">
+                <mean>0</mean>
+                <stddev>1.927e-07</stddev>
+              </noise>
+            </horizontal>
+            <vertical>
+              <!-- 3cm 1-sigma vertical (RTK vertical is typically somewhat
+                   worse than horizontal) -->
+              <noise type="gaussian">
+                <mean>0</mean>
+                <stddev>0.03</stddev>
+              </noise>
+            </vertical>
+          </position_sensing>
+          <velocity_sensing>
+            <horizontal>
+              <!-- 2cm/s 1-sigma horizontal velocity (RTK-level Doppler) -->
+              <noise type="gaussian">
+                <mean>0</mean>
+                <stddev>0.02</stddev>
+              </noise>
+            </horizontal>
+            <vertical>
+              <!-- 3cm/s 1-sigma vertical velocity -->
+              <noise type="gaussian">
+                <mean>0</mean>
+                <stddev>0.03</stddev>
+              </noise>
+            </vertical>
+          </velocity_sensing>
+        </navsat>
       </sensor>
 
     </link>
@@ -271,7 +286,7 @@
       <velocity_decay/>
       <pose>0.2418 -0.2446 0.076024 0 0 0</pose><!--motor poses are fine-->
       <inertial>
-        <!-- Mass/inertia from T-Motor U5 KV400 datasheet (156g, Φ42.5x37.5mm), inertia estimated as a solid cylinder -->
+        <!-- Mass/inertia from T-Motor U5 KV400 (Homebrew's motors) datasheet (156g, Φ42.5x37.5mm), inertia estimated as a solid cylinder -->
         <pose>0 0 0.006 0 0 0</pose>
         <mass>0.156</mass>
         <inertia>
