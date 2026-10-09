@@ -359,7 +359,7 @@ class AparkRiseNode(Node):
             if not (self.safe_z_min_m_apark <= pos[2] <= self.safe_z_max_m_apark):
                 raise ValueError(f"Trajectory z position {pos[2]:.2f}m at t={t:.2f}s falls outside safe_z bounds [{self.safe_z_min_m_apark}, {self.safe_z_max_m_apark}].")
 
-        self.get_logger().info("Trajectory envelope validated against safety boundaries.")
+        self.get_logger().info("Trajectory envelope verification succeeded.")
 
     def _log_theta_saturation(self, t: float, ball_projected: bool, rate_limited: bool) -> None:
         # Surfaced at INFO (not DEBUG) since these are meant to be visible in a normal
@@ -537,7 +537,13 @@ class AparkRiseNode(Node):
             case 2:
                 traj_name = "rose"
 
-        base_dir: str = f"simulation_data/{self.controller_type}/{traj_name}"
+        match self.sim_mode:
+            case False:
+                base_dir = f"real_data/{self.controller_type}/{traj_name}"
+            case True:
+                base_dir = f"simulation_data/{self.controller_type}/{traj_name}"
+            case _:
+                base_dir = f"data/{self.controller_type}/{traj_name}"
         os.makedirs(name=base_dir, exist_ok=True)
 
         if self.trial_number is not None:

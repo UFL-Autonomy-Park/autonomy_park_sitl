@@ -80,9 +80,9 @@ export PX4_HOME_ALT=29.2059 # AMSL, taken from plugging the previous two coordin
 # Custom Gazebo world/model, added via px4-additions/ (see lib/write_px4_with_px4_additions.sh)
 export PX4_GZ_WORLD=autonomy_park # World file (.sdf subsumed) to be used
 export PX4_SIMULATOR=gz # Modern, not Classic
-export PX4_SIM_MODEL=gz_x500 # gz_$MODEL_YOU_WANT; gz_ prefix required
+export PX4_SIM_MODEL=gz_homebrew # gz_$MODEL_YOU_WANT; gz_ prefix required
 export PX4_SYS_AUTOSTART=22000 # Dictates which set of PX4 parameteres get used; if a parameter is unspecified, default for multicopter is used
-export PX4_GZ_MODEL_POSE="0,0,0.5,0,0,0" # x, y, z in Autonomy Park frame; last three numbers are Euler angles for pose (roll, pitch, yaw in radians)
+export PX4_GZ_MODEL_POSE="-22,0,0.5,0,0,0" # x, y, z in Autonomy Park frame; last three numbers are Euler angles for pose (roll, pitch, yaw in radians)
 # Note: Autonomy Park frame's origin is at middle of park on the floor, +x points away from shed, +y points toward SW 23rd Terrace, and z is up (i.e., a local pseudo-ENU frame)
 
 # PX4's `make` config target (see build_px4.sh). Deliberately just
